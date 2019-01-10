@@ -40,7 +40,8 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.7</version>
+            <!--1.2.24及之前版本存在安全漏洞-->
+            <version>1.2.47</version>
         </dependency>
         <!--日志框架-->
         <dependency>
