@@ -42,9 +42,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * <pre>
+ *
+ *     v2.0
+ *       host+path合并url传参
+ * </pre>
  * @author 玖富AI
  */
-public class HttpUtils {
+public class HttpUtils2 {
     private static final String CONTENT_TYPE = "Content-Type";
     private static final char URL_PATH_SEP = '/';
 
@@ -55,20 +60,18 @@ public class HttpUtils {
      * 这里将其改为默认值为: application/json; charset=UTF-8
      * </p>
      *
-     * @param host
-     * @param path
+     * @param url
      * @param headers
      * @param querys
      * @return
      * @throws Exception
      */
-    public static HttpResponse doGet(String host, String path,
-                                     Map<String, String> headers,
+    public static HttpResponse doGet(String url, Map<String, String> headers,
                                      Map<String, String> querys)
             throws Exception {
-        HttpClient httpClient = wrapClient(host);
+        HttpClient httpClient = wrapClient(url);
 
-        HttpGet request = new HttpGet(buildUrl(host, path, querys));
+        HttpGet request = new HttpGet(buildUrl(url, querys));
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
                 request.addHeader(e.getKey(), e.getValue());
@@ -91,22 +94,20 @@ public class HttpUtils {
      * Controller方法需要使用@RequestParam接收参数, @RequestBody无效(Spring框架).
      * </p>
      *
-     * @param host
-     * @param path
+     * @param url
      * @param headers
      * @param querys
      * @param bodys
      * @return
      * @throws Exception
      */
-    public static HttpResponse doPost(String host, String path,
-                                      Map<String, String> headers,
+    public static HttpResponse doPost(String url, Map<String, String> headers,
                                       Map<String, String> querys,
                                       Map<String, String> bodys)
             throws Exception {
-        HttpClient httpClient = wrapClient(host);
+        HttpClient httpClient = wrapClient(url);
 
-        HttpPost request = new HttpPost(buildUrl(host, path, querys));
+        HttpPost request = new HttpPost(buildUrl(url, querys));
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
                 request.addHeader(e.getKey(), e.getValue());
@@ -133,7 +134,7 @@ public class HttpUtils {
      * 建议此方法请求体设置为json字符串. 接收方Controller对应@RequestBody接收参数(Spring框架).
      * </p>
      *
-     * @param host
+     * @param url
      * @param path
      * @param headers
      * @param querys
@@ -141,14 +142,13 @@ public class HttpUtils {
      * @return
      * @throws Exception
      */
-    public static HttpResponse doPost(String host, String path,
-                                      Map<String, String> headers,
+    public static HttpResponse doPost(String url, Map<String, String> headers,
                                       Map<String, String> querys,
                                       String body)
             throws Exception {
-        HttpClient httpClient = wrapClient(host);
+        HttpClient httpClient = wrapClient(url);
 
-        HttpPost request = new HttpPost(buildUrl(host, path, querys));
+        HttpPost request = new HttpPost(buildUrl(url, querys));
 
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
@@ -176,7 +176,7 @@ public class HttpUtils {
     /**
      * Post stream
      *
-     * @param host
+     * @param url
      * @param path
      * @param headers
      * @param querys
@@ -184,14 +184,13 @@ public class HttpUtils {
      * @return
      * @throws Exception
      */
-    public static HttpResponse doPost(String host, String path,
-                                      Map<String, String> headers,
+    public static HttpResponse doPost(String url, Map<String, String> headers,
                                       Map<String, String> querys,
                                       byte[] body)
             throws Exception {
-        HttpClient httpClient = wrapClient(host);
+        HttpClient httpClient = wrapClient(url);
 
-        HttpPost request = new HttpPost(buildUrl(host, path, querys));
+        HttpPost request = new HttpPost(buildUrl(url, querys));
         for (Map.Entry<String, String> e : headers.entrySet()) {
             request.addHeader(e.getKey(), e.getValue());
         }
@@ -209,22 +208,20 @@ public class HttpUtils {
      * 类似doPost(post json)
      * </p>
      *
-     * @param host
-     * @param path
+     * @param url
      * @param headers
      * @param querys
      * @param body
      * @return
      * @throws Exception
      */
-    public static HttpResponse doPut(String host, String path,
-                                     Map<String, String> headers,
+    public static HttpResponse doPut(String url, Map<String, String> headers,
                                      Map<String, String> querys,
                                      String body)
             throws Exception {
-        HttpClient httpClient = wrapClient(host);
+        HttpClient httpClient = wrapClient(url);
 
-        HttpPut request = new HttpPut(buildUrl(host, path, querys));
+        HttpPut request = new HttpPut(buildUrl(url, querys));
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
                 request.addHeader(e.getKey(), e.getValue());
@@ -248,7 +245,7 @@ public class HttpUtils {
     /**
      * Put stream
      *
-     * @param host
+     * @param url
      * @param path
      * @param method
      * @param headers
@@ -257,14 +254,14 @@ public class HttpUtils {
      * @return
      * @throws Exception
      */
-    public static HttpResponse doPut(String host, String path, String method,
+    public static HttpResponse doPut(String url, String method,
                                      Map<String, String> headers,
                                      Map<String, String> querys,
                                      byte[] body)
             throws Exception {
-        HttpClient httpClient = wrapClient(host);
+        HttpClient httpClient = wrapClient(url);
 
-        HttpPut request = new HttpPut(buildUrl(host, path, querys));
+        HttpPut request = new HttpPut(buildUrl(url, querys));
         for (Map.Entry<String, String> e : headers.entrySet()) {
             request.addHeader(e.getKey(), e.getValue());
         }
@@ -279,7 +276,7 @@ public class HttpUtils {
     /**
      * Delete
      *
-     * @param host
+     * @param url
      * @param path
      * @param method
      * @param headers
@@ -287,13 +284,13 @@ public class HttpUtils {
      * @return
      * @throws Exception
      */
-    public static HttpResponse doDelete(String host, String path, String method,
+    public static HttpResponse doDelete(String url, String method,
                                         Map<String, String> headers,
                                         Map<String, String> querys)
             throws Exception {
-        HttpClient httpClient = wrapClient(host);
+        HttpClient httpClient = wrapClient(url);
 
-        HttpDelete request = new HttpDelete(buildUrl(host, path, querys));
+        HttpDelete request = new HttpDelete(buildUrl(url, querys));
         for (Map.Entry<String, String> e : headers.entrySet()) {
             request.addHeader(e.getKey(), e.getValue());
         }
@@ -388,24 +385,35 @@ public class HttpUtils {
     }
 
 
-    private static String buildUrl(String host, String path, Map<String, String> querys) throws UnsupportedEncodingException {
+    /**
+     * <pre>
+     *
+     * </pre>
+     * @param url
+     * @param querys
+     * @return
+     * @throws UnsupportedEncodingException
+     */
+    private static String buildUrl(String url, Map<String, String> querys) throws UnsupportedEncodingException {
         StringBuilder sbUrl = new StringBuilder();
 
-        sbUrl.append(host);
+        sbUrl.append(url);
 
-        if (!StringUtils.isBlank(path)) {
-            char lh = sbUrl.charAt(sbUrl.length() - 1);
-            char lp = path.charAt(0);
-            if (lh == URL_PATH_SEP && lp == URL_PATH_SEP) {
-                //减一个
-                sbUrl.deleteCharAt(sbUrl.length() - 1);
-            }
-            if (lh != URL_PATH_SEP && lp != URL_PATH_SEP) {
-                //补一个
-                sbUrl.append(URL_PATH_SEP);
-            }
-            sbUrl.append(path);
-        }
+//        sbUrl.append(host);
+//
+//        if (!StringUtils.isBlank(path)) {
+//            char lh = sbUrl.charAt(sbUrl.length() - 1);
+//            char lp = path.charAt(0);
+//            if (lh == URL_PATH_SEP && lp == URL_PATH_SEP) {
+//                //减一个
+//                sbUrl.deleteCharAt(sbUrl.length() - 1);
+//            }
+//            if (lh != URL_PATH_SEP && lp != URL_PATH_SEP) {
+//                //补一个
+//                sbUrl.append(URL_PATH_SEP);
+//            }
+//            sbUrl.append(path);
+//        }
         if (null != querys) {
             StringBuilder sbQuery = new StringBuilder();
             for (Map.Entry<String, String> query : querys.entrySet()) {
@@ -431,9 +439,9 @@ public class HttpUtils {
         return sbUrl.toString();
     }
 
-    private static HttpClient wrapClient(String host) {
+    private static HttpClient wrapClient(String url) {
         HttpClient httpClient = new DefaultHttpClient();
-        if (host.startsWith("https://")) {
+        if (url.startsWith("https://")) {
             sslClient(httpClient);
         }
 

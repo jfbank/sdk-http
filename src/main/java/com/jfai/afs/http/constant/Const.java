@@ -1,7 +1,10 @@
 package com.jfai.afs.http.constant;
 
+import java.nio.charset.Charset;
+
 public interface HttpConstant {
 
+    Charset UTF8 = Charset.forName("UTF-8");
 
 
     //

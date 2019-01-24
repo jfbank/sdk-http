@@ -1,11 +1,7 @@
 package com.jfai.afs.http.utils;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.jfai.afs.http.constant.HttpConstant;
-import jdk.nashorn.internal.ir.IfNode;
-import org.apache.commons.codec.binary.Base64;
+import com.jfai.afs.http.constant.HttpConst;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,11 +9,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -30,6 +24,10 @@ import java.util.TreeMap;
  *     默认不压缩数据,
  *     若指定压缩, 仅对data字段压缩, 先压缩, 后加密, 再签名.
  *
+ * v1.2
+ *   - 去掉接收vo的泛型
+ *   - k,v 为null和空串(若是字符串)都不拼接到签名正文中
+ *   - k,v 都不为空时, 才拼接到正文中去
  *
  * v1.1.1
  *   - 压缩数据时, 加入zip=true标记
@@ -39,7 +37,7 @@ import java.util.TreeMap;
  * </pre>
  *
  * @author 玖富AI
- * @version v1.1.1
+ * @version v1.2
  * @email liuhejun108@163.com
  * @date 2018/10/28 10:24
  */
@@ -67,7 +65,7 @@ public class JfCipher {
      * @throws InvalidKeyException
      * @throws SignatureException
      */
-    public static void encryptAndSign(Map<String, Object> vo, String peerPubKey, String selfPrvKey, String appSecret, String aesKey, boolean doZip)
+    public static void encryptAndSign(Map vo, String peerPubKey, String selfPrvKey, String appSecret, String aesKey, boolean doZip)
             throws InvalidKeySpecException, InvalidKeyException, SignatureException {
         long tt0 = System.currentTimeMillis();
         assert vo != null : "`vo` (to be encrypted data must be not null)";
@@ -76,10 +74,11 @@ public class JfCipher {
         long t0 = System.currentTimeMillis();
         String sessionKey = noAesKey ? AES.genAesKey() : aesKey;
         long t1 = System.currentTimeMillis();
-        if (noAesKey) log.debug("Generate AES key:{}, cost {}ms", sessionKey, t1 - t0);
+        if (noAesKey) log.debug("Generate AES key: {}, cost {}ms", sessionKey, t1 - t0);
 
         //对data字段用AES密钥(sessionKey)加密
-        String data = getStringData(vo.get(HttpConstant.DATA));
+        String data = CommonUtil.getJsonString(vo.get(HttpConst.DATA));
+
         byte[] bitData;
 
         if (data != null) {
@@ -91,7 +90,7 @@ public class JfCipher {
                 log.debug("gzip cost: {}ms, source size: {}KB, after gzip: {}KB, compression ratio: {}",
                         gz1 - gz0, data.getBytes().length / 1024.0, bitData.length / 1024.0, data.getBytes().length / (bitData.length + 0.0));
                 // 设置压缩标记
-                vo.put(HttpConstant.ZIP, true);
+                vo.put(HttpConst.ZIP, true);
             } else {
                 bitData = data.getBytes(UTF8);
             }
@@ -101,7 +100,7 @@ public class JfCipher {
             String enData = AES.encrypt(bitData, sessionKey);
             long t3 = System.currentTimeMillis();
             log.debug("AES encrypt data({} chars), cost {}ms", data.length(), t3 - t2);
-            vo.put(HttpConstant.DATA, enData);
+            vo.put(HttpConst.DATA, enData);
         } else {
             log.debug("`data` is null, no need for encrypting");
         }
@@ -111,10 +110,10 @@ public class JfCipher {
         String enSsk = RSA.encrypt(sessionKey, peerPubKey);      //NoSuchPaddingException
         long t5 = System.currentTimeMillis();
         log.debug("RSA encrypt sessionKey({} chars), cost {}ms", sessionKey.length(), t5 - t4);
-        vo.put(HttpConstant.SESSION_KEY, enSsk);
+        vo.put(HttpConst.SESSION_KEY, enSsk);
 
         // 加密后, 要加上 加密标记 encryption=true
-        vo.put(HttpConstant.ENCRYPTION, true);
+        vo.put(HttpConst.ENCRYPTION, true);
 
         //用己方的RSA私钥签名
         String signSrc = buildSignSource(vo, appSecret);
@@ -122,25 +121,13 @@ public class JfCipher {
         String sign = RSA.sign(signSrc, selfPrvKey);
         long t7 = System.currentTimeMillis();
         log.debug("RSA sign({} chars), cost {}ms", signSrc.length(), t7 - t6);
-        vo.put(HttpConstant.SIGN, sign);
+        vo.put(HttpConst.SIGN, sign);
         long tt1 = System.currentTimeMillis();
-        log.debug("encryptAndSign cost:{}ms", tt1 - tt0);
+        log.debug("encryptAndSign cost: {}ms", tt1 - tt0);
     }
 
-    private static String getStringData(Object dataObj) {
-        if (dataObj == null) {
-            return null;
-        }
-        String data;
-        if (isPrimitive(dataObj)) {
-            data = String.valueOf(dataObj);
-        } else if (dataObj instanceof Byte[] || dataObj instanceof byte[]) {
-            throw new RuntimeException("Don't support byte[]");
-        } else {
-            data = JSON.toJSONString(dataObj);
-        }
-        return data;
-    }
+
+
 
     /**
      * 重载, 方便复用sessionKey
@@ -153,10 +140,13 @@ public class JfCipher {
      * @throws InvalidKeySpecException
      * @throws SignatureException
      */
-    public static void encryptAndSign(Map<String, Object> vo, String peerPubKey, String selfPrvKey, String appSecret, boolean doZip)
+    public static void encryptAndSign(Map vo, String peerPubKey, String selfPrvKey, String appSecret, boolean doZip)
             throws InvalidKeyException, InvalidKeySpecException, SignatureException {
         encryptAndSign(vo, peerPubKey, selfPrvKey, appSecret, null, doZip);
     }
+
+
+
 
     /**
      * 默认不压缩
@@ -169,10 +159,13 @@ public class JfCipher {
      * @throws InvalidKeySpecException
      * @throws SignatureException
      */
-    public static void encryptAndSign(Map<String, Object> vo, String peerPubKey, String selfPrvKey, String appSecret)
+    public static void encryptAndSign(Map vo, String peerPubKey, String selfPrvKey, String appSecret)
             throws InvalidKeyException, InvalidKeySpecException, SignatureException {
         encryptAndSign(vo, peerPubKey, selfPrvKey, appSecret, null, false);
     }
+
+
+
 
     /**
      * 用于对即接收的数据包验签
@@ -199,15 +192,14 @@ public class JfCipher {
         //用对方RSA公钥验签
         long t0 = System.currentTimeMillis();
         String content = buildSignSource(vo, appSecret);
-        boolean b = RSA.checkSign(content, String.valueOf(vo.get(HttpConstant.SIGN)), peerPubKey);
+        boolean b = RSA.checkSign(content, String.valueOf(vo.get(HttpConst.SIGN)), peerPubKey);
         long t1 = System.currentTimeMillis();
         log.debug("RSA check sign({} chars), cost {}ms", content.length(), t1 - t0);
         return b;
     }
 
-    public static <T> void decrypt(Map<String, Object> vo, String selfPrvKey, boolean needUnzip) throws InvalidKeySpecException, InvalidKeyException, IOException {
-        decrypt(vo, selfPrvKey, null, needUnzip);
-    }
+
+
 
     /**
      * 默认不执行解压流程
@@ -219,12 +211,11 @@ public class JfCipher {
      * @throws InvalidKeyException
      */
     public static <T> void decrypt(Map<String, Object> vo, String selfPrvKey) throws InvalidKeySpecException, InvalidKeyException, IOException {
-        decrypt(vo, selfPrvKey, null, false);
+        decrypt(vo, selfPrvKey,  false);
     }
 
-    public static <T> void decrypt(Map<String, Object> vo, String selfPrvKey, Class<T> dataType) throws InvalidKeySpecException, InvalidKeyException, IOException {
-        decrypt(vo, selfPrvKey, dataType, false);
-    }
+
+
 
     /**
      * 用于对接收的数据报解密
@@ -236,25 +227,25 @@ public class JfCipher {
      *
      * @param vo
      * @param selfPrvKey
-     * @param dataType   确保类型正确
      * @throws InvalidKeySpecException
      * @throws InvalidKeyException
      */
-    public static <T> void decrypt(Map<String, Object> vo, String selfPrvKey, Class<T> dataType, boolean isUngzip) throws InvalidKeySpecException, InvalidKeyException, IOException {
+    public static <T> void decrypt(Map<String, Object> vo, String selfPrvKey, boolean isUngzip) throws InvalidKeySpecException, InvalidKeyException, IOException {
         assert vo != null : "`vo` mustn't be null";
-        assert selfPrvKey != null && !"".equals(selfPrvKey) : "`rsaPrivkey` mustn't be empty";
+        assert selfPrvKey != null && !"".equals(selfPrvKey) : "`selfPrvKey` mustn't be empty";
 
-        String enSsk = String.valueOf(vo.get(HttpConstant.SESSION_KEY));
+        String enSsk = String.valueOf(vo.get(HttpConst.SESSION_KEY));
         long t0 = System.currentTimeMillis();
         String deSsk = RSA.decrypt(enSsk, selfPrvKey);
         long t1 = System.currentTimeMillis();
         log.trace("RSA decrypt encrypted sessionKey({} chars), cost {}ms", enSsk.length(), t1 - t0);
-        vo.put(HttpConstant.SESSION_KEY, deSsk);
+        vo.put(HttpConst.SESSION_KEY, deSsk);
 
         //进入解密的环节, data 字段必然也必须是 String
-        Object dataObj = vo.get(HttpConstant.DATA);
+        Object dataObj = vo.get(HttpConst.DATA);
         //data 字段不为null时才需要解密
         if (dataObj != null) {
+            // 进入解密时, data 的值必须是String
             String data = String.valueOf(dataObj);
             long t2 = System.currentTimeMillis();
             String deData = null;
@@ -278,27 +269,6 @@ public class JfCipher {
                 long g1 = System.currentTimeMillis();
                 log.debug("ungzip cost:{}ms, {} KB", g1 - g0, deData.getBytes().length / 1024.0);
             }
-
-
-            //将解密后的 data Json串还原成指定的类型对象
-            if (dataType != null) {
-                log.debug("transfer decrypted `data` to specified type {}", dataType);
-                Object trDataObj;
-                //数组 OR Collection todo
-                if (Collection.class.isAssignableFrom(dataType) || dataType.isArray()) {
-                    trDataObj = JSON.parseArray(deData, Object.class);//Note: 无法指定元素类型 / List<Object>
-                } else {
-                    trDataObj = JSON.parseObject(deData, dataType);
-                }
-
-                log.trace("transfered `data`:{}", trDataObj);
-                vo.put(HttpConstant.DATA, trDataObj);
-
-            } else {
-                log.trace("no specified data type, will set decrypted string");
-                vo.put(HttpConstant.DATA, deData);
-            }
-
 
         } else {
             log.info("`data` is null, need not to decrypt");
@@ -326,39 +296,43 @@ public class JfCipher {
      * @return
      */
     private static String buildSignSource(Map<String, Object> vo, String appSecret) {
-        //构建TreeMap, 方便按key的字典顺序遍历 --> 改为遍历构建, 防止key有null
-        //TreeMap<String, Object> signMap = new TreeMap<>(vo);
+        // 构建TreeMap, 方便按key的字典顺序遍历 --> 改为遍历构建, 防止key有null
+        // TreeMap<String, Object> signMap = new TreeMap<>(vo);
         TreeMap<String, Object> signMap = new TreeMap<>();
         for (Map.Entry<String, Object> e : vo.entrySet()) {
             String k = e.getKey();
             Object v = e.getValue();
-            if (k != null) {
+            if (StringUtils.isNotBlank(k)) {
                 signMap.put(k, v);
             }
         }
 
 
-        //追加appSecret
-        if (appSecret != null) {        // 适应无需 appSecret的场景
-            signMap.put(HttpConstant.APP_SECRET, appSecret);
+        // 追加appSecret
+        if (StringUtils.isNotBlank(appSecret)) {        // 适应无需 appSecret 的场景
+            signMap.put(HttpConst.APP_SECRET, appSecret);
         }
 
-        //遍历, 拼接
+        // 遍历, 拼接
         StringBuilder sb = new StringBuilder(64);
         for (Map.Entry<String, Object> e : signMap.entrySet()) {
             String k = e.getKey();
             Object v = e.getValue();
-            //避开sign字段自身
-            if (HttpConstant.SIGN.equals(k)) {
+            // 避开sign字段自身
+            if (HttpConst.SIGN.equals(k)) {
                 continue;
             }
 
-            if (sb.length() > 0) {
-                sb.append("&");
-            }
-            sb.append(k);
-            if (v != null) {        //防止value==null ==> "null" / if v==null key&...
-                sb.append("=").append(v);
+            // k,v 都不为空时才拼接, k已经不为空(上文)
+            // 防止value==null ==> "null"
+            // 要考虑空串情况, 避免请求端和接收端行为不一致情况.
+            if (v != null && !"".equals(v)) {
+                // 保证尾部不留 &
+                if (sb.length() > 0) {
+                    sb.append("&");
+                }
+                // k,v都不为空时, 才参与签名
+                sb.append(k).append("=").append(v);
             }
         }
 
@@ -367,27 +341,10 @@ public class JfCipher {
     }
 
 
-    /**
-     * 判断是否是"基本类型"
-     * <pre>
-     *     Note: 这里的基本类型特指简单的值, "xxx",99,'u',true,...
-     *     这些类型不适宜转换成Json string, 虽然可以转换, 但是再反过来parseObject会报错.
-     *     toJsonString("xxx") ==> ""xxx""
-     * </pre>
-     *
-     * @param o
-     * @return
-     */
-    private static boolean isPrimitive(Object o) {
-        if (o instanceof String || o instanceof Number || o instanceof Boolean
-                || o instanceof Character || o instanceof Enum) {
-            return true;
-        }
-        return false;
-    }
 
     public static void main(String[] args) {
-
+        System.out.println(CommonUtil.isPrimitive(HttpConst.Encryption.MD5));
+        System.out.println(String.valueOf(HttpConst.Encryption.MD5));
     }
 
 
