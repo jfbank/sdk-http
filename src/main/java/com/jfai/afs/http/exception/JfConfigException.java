@@ -6,25 +6,25 @@ package com.jfai.afs.http.exception;
  * @email liuhejun108@163.com
  * @date 2019/1/15 1:20
  */
-public class JfSecurityException extends RuntimeException {
+public class JfConfigException extends JfWebRuntimeException {
 
-    public JfSecurityException() {
+    public JfConfigException() {
         super();
     }
 
-    public JfSecurityException(String message) {
+    public JfConfigException(String message) {
         super(message);
     }
 
-    public JfSecurityException(String message, Throwable cause) {
+    public JfConfigException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public JfSecurityException(Throwable cause) {
+    public JfConfigException(Throwable cause) {
         super(cause);
     }
 
-    protected JfSecurityException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    protected JfConfigException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

@@ -1,0 +1,6 @@
+com.jfai.afs.http.bean
+com.jfai.afs.http.client
+com.jfai.afs.http.constant
+com.jfai.afs.http.demo.vo
+com.jfai.afs.http.exception
+com.jfai.afs.http.utils

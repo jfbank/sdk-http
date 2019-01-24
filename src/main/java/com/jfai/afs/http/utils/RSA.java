@@ -1,6 +1,7 @@
 package com.jfai.afs.http.utils;
 
 
+import com.jfai.afs.http.exception.JfConfigException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -400,7 +401,7 @@ public class RSA {
     }
 
     public static boolean checkSign(String content, String sign, String publicKey) throws InvalidKeySpecException, InvalidKeyException, SignatureException {
-        log.debug("content: {}, sign:{}, publicKey: {}", content, sign, publicKey);
+        log.debug("\ncontent: {},\n sign:{},\n publicKey: {}", content, sign, publicKey);
 //        KeyFactory keyFactory = null;
 //        try {
 //            keyFactory = KeyFactory.getInstance(RSA);
@@ -432,6 +433,48 @@ public class RSA {
         return signature.verify(Base64.decodeBase64(sign.getBytes(UTF8)));
     }
 
+
+    /**校验rsa密钥对是否有效
+     * @param pubkey
+     * @param prvkey
+     */
+    public static void validateRsaKeyPair(String pubkey, String prvkey) {
+        String src = "Hi~ 我是测试RSA密钥对是否有效的原文^~^";
+        log.debug("test source: "+src);
+        String enc = null;
+        try {
+            enc = encrypt(src, pubkey);
+        } catch (Exception e) {
+            throw new RuntimeException("'pubkey' 加密异常", e);
+        }
+
+        log.debug("test rsa encrypt: "+enc);
+        String dec = null;
+        try {
+            dec = decrypt(enc, prvkey);
+        } catch (Exception e) {
+            throw new RuntimeException("'prvkey' 解密异常", e);
+        }
+        log.debug("test rsa decrypt: "+ dec);
+
+        // 签名校验
+        String sign = null;
+        try {
+            sign = sign(src, prvkey);
+        } catch (Exception e) {
+            throw new RuntimeException("'prvkey' 签名异常", e);
+        }
+        System.out.println(sign);
+        boolean b = false;
+        try {
+            b = checkSign(src, sign, pubkey);
+        } catch (Exception e) {
+            throw new RuntimeException("'pubkey' 验签异常", e);
+        }
+        if (!b) {
+            throw new RuntimeException("'pubkey' 验签失败");
+        }
+    }
 
     /**
      * 存储Base64编码后的rsa公私钥字符串信息.

@@ -1,7 +1,8 @@
-package com.jfai.afs.http.sdk;
+package com.jfai.afs.http.client;
 
 import com.alibaba.fastjson.JSON;
-import com.jfai.afs.http.bean.JfResBodyImpl;
+import com.jfai.afs.http.bean.HttpVo;
+import com.jfai.afs.http.bean.JfResBody;
 import com.jfai.afs.http.bean.JfResponse;
 import com.jfai.afs.http.utils.HttpUtils;
 import org.apache.http.HttpResponse;
@@ -30,7 +31,7 @@ public class SdkTest {
         try {
             JfResponse res = c.doPost("http://localhost:18081/test/post", null, data);
             if (res.is2xx()) {
-                JfResBodyImpl body = res.getBody();
+                HttpVo body = res.getBody();
                 System.out.println(body);
                 Object d = body.getData();
             }else {
@@ -60,7 +61,7 @@ public class SdkTest {
         try {
             JfResponse res = c.doGet("http://localhost:18081/test/encryption", null, data);
             if (res.is2xx()) {
-                JfResBodyImpl body = res.getBody();
+                HttpVo body = res.getBody();
                 System.out.println(body);
             }else {
                 System.out.println(res.getStatusCode());
@@ -91,7 +92,7 @@ public class SdkTest {
         try {
             JfResponse res = c.doGet("http://localhost:18081/test/encryption", null, null);
             if (res.is2xx()) {
-                JfResBodyImpl body = res.getBody();
+                HttpVo body = res.getBody();
                 System.out.println(body);
             }else {
                 System.out.println(res.getStatusCode());
@@ -123,7 +124,7 @@ public class SdkTest {
         try {
             JfResponse res = c.doGet("http://localhost:18081/test/encryption", null, null);
             if (res.is2xx()) {
-                JfResBodyImpl body = res.getBody();
+                HttpVo body = res.getBody();
                 System.out.println(body);
             }else {
                 System.out.println(res.getStatusCode());
@@ -156,8 +157,9 @@ public class SdkTest {
         try {
             JfResponse res = c.doGet("test", null, null);
             if (res.is2xx()) {
-                JfResBodyImpl body = res.getBody();
+                HttpVo body = res.getBody();
                 System.out.println(body);
+                System.out.println(body.getData());
             }else {
                 System.out.println(res.getStatusCode());
                 System.out.println(res.getBody());
@@ -192,7 +194,7 @@ public class SdkTest {
     @Test
     public void fun2(){
 
-        JfResBodyImpl resp = new JfResBodyImpl();
+        JfResBody resp = new JfResBody();
         resp.setCode(89);
         resp.setMessage("xxxxx");
         resp.setCause("原因");
@@ -206,7 +208,7 @@ public class SdkTest {
         String x = JSON.toJSONString(resp);
         System.out.println(x);
 
-        JfResBodyImpl jvo = JSON.parseObject(x, JfResBodyImpl.class);
+        HttpVo jvo = JSON.parseObject(x, HttpVo.class);
         System.out.println(jvo);
 
 //        TreeMap<String, Object> tr = new TreeMap<>();

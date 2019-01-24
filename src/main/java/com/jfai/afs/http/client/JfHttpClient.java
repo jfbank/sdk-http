@@ -1,15 +1,16 @@
-package com.jfai.afs.http.sdk;
+package com.jfai.afs.http.client;
 
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.TypeReference;
-import com.jfai.afs.http.bean.JfResBodyImpl;
+import com.jfai.afs.http.bean.JfReqParam;
+import com.jfai.afs.http.bean.JfResBody;
 import com.jfai.afs.http.bean.JfResponse;
 import com.jfai.afs.http.constant.HttpConst;
 import com.jfai.afs.http.exception.JfConfigException;
 import com.jfai.afs.http.exception.JfSecurityException;
-import com.jfai.afs.http.utils.CommonUtil;
+import com.jfai.afs.http.utils.GzipUtils;
 import com.jfai.afs.http.utils.JfCipher;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
@@ -39,9 +40,9 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.Contract;
 
 /**
  * <p>
@@ -55,13 +56,13 @@ public class JfHttpClient {
     public static final Logger log = LoggerFactory.getLogger(JfHttpClient.class);
 
 
-    private static final String CONTENT_TYPE = "Content-Type";
-    private static final char URL_PATH_SEP = '/';
+    public static final String CONTENT_TYPE = "Content-Type";
+    public static final char URL_PATH_SEP = '/';
     public static final String HTTP = "http";
     public static final String HTTPS_PROTO = "https://";
 
 
-    private Config config = new Config();
+    protected volatile Config config = new Config();
 
     /**
      * 调出config实例, 进行参数配置.
@@ -73,25 +74,26 @@ public class JfHttpClient {
     }
 
 
+    public JfHttpClient() {}
+
     /**
      * get
      * <p>
      * 若没有指定Content-Type, 则"Content type" 默认为null.
-     * 这里将其改为默认值为: application/json; charset=UTF-8
+     * 这里将其改为默认值为: <code>application/json; charset=UTF-8</code>
      * </p>
      *
-     * @param headers
-     * @param data 接口级别参数
+     * @param headers 可null
+     * @param data 接口级别参数, 可null
      * @return
      * @throws Exception
      */
-    public <T> JfResponse doGet(String url,
-                            Map<String, String> headers,
-                            T data) throws Exception {
+    @Contract("_->!null")
+    public <T> JfResponse doGet(String url, Map<String, String> headers, T data) throws Exception {
         HttpClient httpClient = wrapClient(url);
 
         // 准备请求参数
-        Map<String, Object> params = prepareParams((T) data);
+        Map<String, Object> params = prepareParams((T) data).toMap();
 
         HttpGet request = new HttpGet(buildUrl(url, params));
         if (headers != null) {
@@ -123,10 +125,11 @@ public class JfHttpClient {
      * @return
      * @throws Exception
      */
+    @Contract("_->!null")
     public <T> JfResponse doPostForm(String url, Map<String, String> headers, T data) throws Exception {
         HttpClient httpClient = wrapClient(url);
         // 准备请求参数
-        Map<String, Object> params = prepareParams((T) data);
+        Map<String, Object> params = prepareParams((T) data).toMap();
 
         HttpPost request = new HttpPost(buildUrl(url, null));
         if (headers != null) {
@@ -167,9 +170,10 @@ public class JfHttpClient {
      * @return
      * @throws Exception
      */
+    @Contract("_->!null")
     public <T> JfResponse doPost(String url, Map<String, String> headers, T data) throws Exception {
         HttpClient httpClient = wrapClient(url);
-        Map<String, Object> params = prepareParams(data);
+        Map<String, Object> params = prepareParams(data).toMap();
 
 
         HttpPost request = new HttpPost(buildUrl(url, null));
@@ -428,7 +432,7 @@ public class JfHttpClient {
      * @return
      * @throws UnsupportedEncodingException
      */
-    private String buildUrl(String url, Map<String, Object> querys) {
+    protected String buildUrl(String url, Map<String, Object> querys) {
         //assert StringUtils.isNotBlank(url) : "url mustn't be empty";
 
         StringBuilder sbUrl = new StringBuilder();
@@ -479,11 +483,11 @@ public class JfHttpClient {
         if (!isAbsoluteUrl(url)) {
             // 相对路径时, 需要补上host前缀
 
-            if (StringUtils.isBlank(config.defaultHost)) {
+            if (StringUtils.isBlank(config.getDefaultHost())) {
                 throw new JfConfigException("使用相对URL时, 需要'defaultHost'配置");
             }
             StringBuilder sbUrl = new StringBuilder(32);
-            sbUrl.append(config.defaultHost);
+            sbUrl.append(config.getDefaultHost());
 
             if (!StringUtils.isBlank(url)) {
                 char lh = sbUrl.charAt(sbUrl.length() - 1);
@@ -519,17 +523,17 @@ public class JfHttpClient {
         return url.startsWith(HTTP);
     }
 
-    private HttpClient wrapClient(String url) {
+    protected HttpClient wrapClient(String url) {
         HttpClient httpClient = getHttpClient();
         if (isAbsoluteUrl(url)) {
             if (url.startsWith(HTTPS_PROTO)) {
                 sslClient(httpClient);
             }
         }else{
-            if (StringUtils.isBlank(config.defaultHost)) {
+            if (StringUtils.isBlank(config.getDefaultHost())) {
                 throw new JfConfigException("使用相对URL时, 需要'defaultHost'配置");
             }
-            if (config.defaultHost.startsWith(HTTPS_PROTO)) {
+            if (config.getDefaultHost().startsWith(HTTPS_PROTO)) {
                 sslClient(httpClient);
             }
         }
@@ -538,7 +542,8 @@ public class JfHttpClient {
     }
 
 
-    private JfResponse executeMethod(HttpClient httpClient, HttpRequestBase request) throws IOException, JfSecurityException {
+    @Contract("_->!null")
+    protected JfResponse executeMethod(HttpClient httpClient, HttpRequestBase request) throws IOException {
         HttpResponse resp = null;
         JfResponse jfResponse;
         try {
@@ -572,11 +577,11 @@ public class JfHttpClient {
      * @param resp
      * @return
      * @throws IOException
-     * @throws JfSecurityException
      */
-    private JfResponse handleJsonResponse(HttpResponse resp) throws IOException, JfSecurityException {
+    @Contract("_->!null")
+    protected JfResponse handleJsonResponse(HttpResponse resp) throws IOException{
         if (resp == null) {
-            // 返回空响应
+            // 返回无body
             return new JfResponse();
         }
 
@@ -587,22 +592,34 @@ public class JfHttpClient {
 
         // 默认支持json响应体
         // 服务端必须响应json
-        JfResBodyImpl body = getJsonEntity(resp, JfResBodyImpl.class);
+        JfResBody body = getJsonEntity(resp, JfResBody.class);
 
         // 若响应体是加密的, 则执行解密操作
         // 解密流程包括: 验签 -> 解密
-        if (body!=null && body.getEncryption()) {
-            try {
-                JfCipher.checkSign(body.values(), config.serverPubkey, config.appSecret);
-            } catch (Exception e) {
-                throw new JfSecurityException("check sign exception", e);
+        if (body!=null) {
+            // 加密响应
+            if (body.getEncryption()!=null && body.getEncryption()) {
+                try {
+                    JfCipher.checkSign(body, config.getServerPubkey(), config.getAppSecret());
+                } catch (Exception e) {
+                    throw new JfSecurityException("check sign exception", e);
+                }
+                try {
+                    JfCipher.decrypt(body, config.getClientPrvkey(), body.getZip()!=null && body.getZip());
+                    log.debug("解密后的JfResBody: {}", body);
+                } catch (Exception e) {
+                    throw new JfSecurityException("decrypt exception", e);
+                }
+            }else{
+                // 明文, 但压缩的响应
+                if (body.getZip()!=null && body.getZip()) {
+                    String s = GzipUtils.ungzipb64(body.getData());
+                    body.setData(s);
+                    // 设置压缩标记
+                    body.setZip(true);
+                    log.debug("解压后的JfResBody: {}", body);
+                }
             }
-            try {
-                JfCipher.decrypt(body.values(), config.clientPrvkey, body.getZip());
-            } catch (Exception e) {
-                throw new JfSecurityException("decrypt exception", e);
-            }
-
         }
 
 
@@ -619,7 +636,7 @@ public class JfHttpClient {
         return new DefaultHttpClient();
     }
 
-    private void sslClient(HttpClient httpClient) {
+    protected void sslClient(HttpClient httpClient) {
         try {
             SSLContext ctx = SSLContext.getInstance("TLS");
             X509TrustManager tm = new X509TrustManager() {
@@ -655,15 +672,16 @@ public class JfHttpClient {
      * </p>
      * @param data
      */
-    private <T> Map<String, Object> wrapReqParams(T data) {
-        Map<String, Object> p = new HashMap<>();
-        // 接口参数转换, 统一为字符串
-        String ds = CommonUtil.getJsonString(data);
-        if(ds!=null) p.put(HttpConst.DATA, ds);
+    protected  <T> JfReqParam wrapReqParams(T data) {
+        //Map<String, Object> p = new HashMap<>();
+        JfReqParam reqParam = new JfReqParam();
+        reqParam.setData(data);
+
+
         // 补充系统参数
-        if(config.getAppKey()!=null) p.put(HttpConst.APP_KEY, config.getAppKey());
-        p.put(HttpConst.TIMESTAMP, System.currentTimeMillis());
-        return p;
+        if(config.getAppKey()!=null) reqParam.setAppKey(config.getAppKey());
+        reqParam.setTimestamp(System.currentTimeMillis());
+        return reqParam;
     }
 
 
@@ -673,140 +691,47 @@ public class JfHttpClient {
      *         <li>补充请求需要的系统级别参数. 开发者只需要关心如何准备目标接口所需接口级参数.
      *         而无需关心, 如: 'appKey', 'sessionKey', 'sign', ...</li>
      *         <li>加密和压缩请求参数(由配置参数决定是否加密和压缩)</li>
+     *         <li>'data' 字段的不论是基本类型还是pojo, 都转成json字符串</li>
      *     </ul>
      * </p>
-     * @param data
      * @param <T>
+     * @param data
      * @return
-     * @throws JfSecurityException
      */
-    private <T> Map<String, Object> prepareParams(T data) throws JfSecurityException {
+    protected  <T> JfReqParam prepareParams(T data) throws JfSecurityException {
         // 补充系统级参数
-        Map<String, Object> params = wrapReqParams(data);
+        JfReqParam params = wrapReqParams(data);
 
-        // 加密
-        if (config.encryption && params != null) {
-            try {
-                JfCipher.encryptAndSign(params, config.serverPubkey, config.clientPrvkey, config.appSecret, config.zip);
-            } catch (Exception e) {
-                throw new JfSecurityException("encrypt and sign exception", e);
+        if (params != null) {
+            // 加密
+            if (config.getEncryption()) {
+                try {
+                    JfCipher.encryptAndSign(params, config.getServerPubkey(), config.getClientPrvkey(), config.getAppSecret(), config.getZip());
+                    log.debug("加密后的JfReqParam: {}", params);
+                } catch (Exception e) {
+                    throw new JfSecurityException("encrypt and sign exception", e);
+                }
+            }else{
+                // 不加密, 但压缩
+                if (config.getZip()) {
+                    String s = GzipUtils.gzip2b64u(params.getData());
+                    params.setData(s);
+                    log.debug("压缩后的JfReqParam: {}", params);
+                }
+
             }
+
         }
+
+
         return params;
     }
 
-
-
-    /**
-     * 玖富http客户端需要的配置项.
-     */
-    public static class Config {
-        /**
-         * 作为身份验证和计费的依据, 必选.
-         */
-        private String appKey;
-        /**
-         * 服务端公钥, 即玖富的公钥, 用于加密请求数据.
-         */
-        private String serverPubkey;
-        /**
-         * 客户端公钥, 即接口接入方公钥, 用于验签响应数据.
-         */
-        private String clientPubkey;
-        /**
-         * 客户端私钥, 即接入方的私钥, 用于加密请求数据.
-         */
-        private String clientPrvkey;
-        /**
-         * 和appKey时一对, 用于签名时加盐. !相当于密码, 不可外泄!.
-         */
-        private String appSecret;
-        /**
-         * 默认host, 如: http://afs.9fbank.com
-         */
-        private String defaultHost;
-        /**
-         * 是否对请求数据加密.
-         */
-        private boolean encryption = false;
-        /**
-         * 是否压缩请求数据
-         */
-        private boolean zip = false;
-
-        public String getAppKey() {
-            return appKey;
-        }
-
-        public Config setAppKey(String appKey) {
-            this.appKey = appKey;
-            return this;
-        }
-
-        public String getServerPubkey() {
-            return serverPubkey;
-        }
-
-        public Config setServerPubkey(String serverPubkey) {
-            this.serverPubkey = serverPubkey;
-            return this;
-        }
-
-        public String getClientPubkey() {
-            return clientPubkey;
-        }
-
-        public Config setClientPubkey(String clientPubkey) {
-            this.clientPubkey = clientPubkey;
-            return this;
-        }
-
-        public String getClientPrvkey() {
-            return clientPrvkey;
-        }
-
-        public Config setClientPrvkey(String clientPrvkey) {
-            this.clientPrvkey = clientPrvkey;
-            return this;
-        }
-
-        public String getAppSecret() {
-            return appSecret;
-        }
-
-        public Config setAppSecret(String appSecret) {
-            this.appSecret = appSecret;
-            return this;
-        }
-
-        public String getDefaultHost() {
-            return defaultHost;
-        }
-
-        public Config setDefaultHost(String defaultHost) {
-            this.defaultHost = defaultHost;
-            return this;
-        }
-
-        public boolean getEncryption() {
-            return encryption;
-        }
-
-        public Config setEncryption(boolean encryption) {
-            this.encryption = encryption;
-            return this;
-        }
-
-        public boolean getZip() {
-            return zip;
-        }
-
-        public Config setZip(boolean zip) {
-            this.zip = zip;
-            return this;
-        }
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder(this.getClass().getSimpleName()).append("{");
+        sb.append(config);
+        sb.append('}');
+        return sb.toString();
     }
-
-
-
 }

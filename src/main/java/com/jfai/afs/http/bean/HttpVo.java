@@ -1,9 +1,10 @@
 package com.jfai.afs.http.bean;
 
 import com.alibaba.fastjson.TypeReference;
-import com.jfai.afs.http.constant.HttpConst;
+import com.jfai.afs.http.exception.JfParseException;
 
-import java.util.HashMap;
+import java.beans.IntrospectionException;
+import java.text.ParseException;
 import java.util.Map;
 
 /**
@@ -12,60 +13,56 @@ import java.util.Map;
  * @email liuhejun108@163.com
  * @date 2019/1/14 21:56
  */
-public interface JfResBody {
+public interface HttpVo {
 
 
-    public Integer getCode();
 
-    public JfResBody setCode(Integer code);
-
-    public String getMessage();
-
-    public JfResBody setMessage(String message);
-
-    public String getCause();
-
-    public JfResBody setCause(String cause);
-
-    public String getRequestId();
-
-
-    public JfResBody setRequestId(String requestId);
-
-    public Long getStartTime();
-
-    public JfResBody setStartTime(Long startTime);
-
-    public Long getSpendTime();
-
-    public JfResBody setSpendTime(Long spendTime);
 
     /**
+     * data 始终是字符串
+     */
+    public String getData();
+
+    /**解析出指定类型
+     * @param type
+     * @param <T>
+     */
+    public <T> T getData(Class<T> type);
+
+    /**
+     * @param ref 这里使用fastjson框架的 TypeRef
+     * @param <T>
      * @return
      */
-    public Object getData();
+    public <T> T getData(TypeReference<T> ref);
 
-    public JfResBody setData(Object data);
+    /**
+     * to json adaptedly
+     * @param data
+     * @return
+     */
+    public void setData(Object data);
 
+    /**为了兼容, 所有Boolean类型统一用包装类.
+     * 否则, 在拼接签名字符串时会和js拼接的效果不一致.
+     * @return
+     */
     public Boolean getEncryption();
 
-    public JfResBody setEncryption(Boolean encryption);
+    public void setEncryption(Boolean encryption);
 
     public Boolean getZip();
 
-    public JfResBody setZip(Boolean zip);
+    public void setZip(Boolean zip);
 
     public String getSign();
 
-    public JfResBody setSign(String sign);
+    public void setSign(String sign);
 
     public String getSessionKey();
 
-    public JfResBody setSessionKey(String sessionKey);
+    public void setSessionKey(String sessionKey);
 
-    public String getAppKey();
-
-    public JfResBody setAppKey(String appKey);
 
 
     /**所有的字段和值一起构造成Map输出
@@ -74,7 +71,11 @@ public interface JfResBody {
     public Map<String, Object> toMap();
 
 
-
+    /**格式化方式 toString
+     * @param pretty
+     * @return
+     */
+    public String toString(boolean pretty);
 
 
 }

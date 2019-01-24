@@ -4,6 +4,7 @@ package com.jfai.afs.http.utils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.TypeReference;
+import com.jfai.afs.http.constant.HttpConst;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -42,6 +43,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * <p>
+ *     基本的通用http请求工具类, 功能全, 但使用麻烦, 作为备用.
+ * </p>
+ * <p>
+ *     没有配置连接池.
+ * </p>
+ *
  * <pre>
  *
  *     v2.0
@@ -49,7 +57,7 @@ import java.util.Map;
  * </pre>
  * @author 玖富AI
  */
-public class HttpUtils2 {
+public class HttpUtils {
     private static final String CONTENT_TYPE = "Content-Type";
     private static final char URL_PATH_SEP = '/';
 
@@ -67,8 +75,7 @@ public class HttpUtils2 {
      * @throws Exception
      */
     public static HttpResponse doGet(String url, Map<String, String> headers,
-                                     Map<String, String> querys)
-            throws Exception {
+                                     Map<String, String> querys) throws Exception {
         HttpClient httpClient = wrapClient(url);
 
         HttpGet request = new HttpGet(buildUrl(url, querys));
@@ -135,7 +142,6 @@ public class HttpUtils2 {
      * </p>
      *
      * @param url
-     * @param path
      * @param headers
      * @param querys
      * @param body    建议传入json格式字符串. 若要传入普通文本, 务必设置content type为'text/plain;charset=UTF-8'
@@ -177,7 +183,6 @@ public class HttpUtils2 {
      * Post stream
      *
      * @param url
-     * @param path
      * @param headers
      * @param querys
      * @param body
@@ -246,7 +251,6 @@ public class HttpUtils2 {
      * Put stream
      *
      * @param url
-     * @param path
      * @param method
      * @param headers
      * @param querys
@@ -277,7 +281,6 @@ public class HttpUtils2 {
      * Delete
      *
      * @param url
-     * @param path
      * @param method
      * @param headers
      * @param querys
@@ -385,49 +388,69 @@ public class HttpUtils2 {
     }
 
 
+    public static String buildUrl(String url, Map<String, String> querys) {
+        return buildUrl(url, null, querys);
+    }
+
+    public static String buildUrl(String host, String path) {
+        return buildUrl(host, path, null);
+    }
+
     /**
      * <pre>
      *
      * </pre>
-     * @param url
+     * @param host
+     * @param path
      * @param querys
      * @return
      * @throws UnsupportedEncodingException
      */
-    private static String buildUrl(String url, Map<String, String> querys) throws UnsupportedEncodingException {
+    public static String buildUrl(String host, String path, Map<String, String> querys) {
         StringBuilder sbUrl = new StringBuilder();
 
-        sbUrl.append(url);
+        //sbUrl.append(url);
 
-//        sbUrl.append(host);
-//
-//        if (!StringUtils.isBlank(path)) {
-//            char lh = sbUrl.charAt(sbUrl.length() - 1);
-//            char lp = path.charAt(0);
-//            if (lh == URL_PATH_SEP && lp == URL_PATH_SEP) {
-//                //减一个
-//                sbUrl.deleteCharAt(sbUrl.length() - 1);
-//            }
-//            if (lh != URL_PATH_SEP && lp != URL_PATH_SEP) {
-//                //补一个
-//                sbUrl.append(URL_PATH_SEP);
-//            }
-//            sbUrl.append(path);
-//        }
+        sbUrl.append(host);
+
+        if (!StringUtils.isBlank(path)) {
+            char lh = sbUrl.charAt(sbUrl.length() - 1);
+            char lp = path.charAt(0);
+            if (lh == URL_PATH_SEP && lp == URL_PATH_SEP) {
+                //减一个
+                sbUrl.deleteCharAt(sbUrl.length() - 1);
+            }
+            if (lh != URL_PATH_SEP && lp != URL_PATH_SEP) {
+                //补一个
+                sbUrl.append(URL_PATH_SEP);
+            }
+            sbUrl.append(path);
+        }
+
         if (null != querys) {
             StringBuilder sbQuery = new StringBuilder();
             for (Map.Entry<String, String> query : querys.entrySet()) {
-                if (0 < sbQuery.length()) {
-                    sbQuery.append("&");
-                }
-                if (StringUtils.isBlank(query.getKey()) && StringUtils.isNotBlank(query.getValue())) {
-                    sbQuery.append(query.getValue());
-                }
+                //region k为空就不要拼接了 --Nisus Liu 2019/1/17 16:38
+                /*
+                 * if (StringUtils.isBlank(query.getKey()) && StringUtils.isNotBlank(query.getValue())) {
+                     sbQuery.append(query.getValue());
+                 }
+                 */
+                //endregion
                 if (query.getKey() != null) {
+                    // 增加键值对前, 先追加 & 分隔符
+                    if (0 < sbQuery.length()) {
+                        sbQuery.append("&");
+                    }
+
                     sbQuery.append(query.getKey());
                     if (query.getValue() != null) {
                         sbQuery.append("=");
-                        sbQuery.append(URLEncoder.encode(String.valueOf(query.getValue()), "utf-8"));
+                        try {
+                            sbQuery.append(URLEncoder.encode(String.valueOf(query.getValue()), HttpConst.UTF8.name()));
+                        } catch (UnsupportedEncodingException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
             }

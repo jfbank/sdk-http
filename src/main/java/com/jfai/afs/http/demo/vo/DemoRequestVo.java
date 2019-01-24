@@ -1,6 +1,6 @@
 package com.jfai.afs.http.demo.vo;
 
-import com.jfai.afs.http.constant.HttpConstant;
+import com.jfai.afs.http.constant.HttpConst;
 
 import java.util.HashMap;
 
@@ -18,45 +18,45 @@ import java.util.HashMap;
 public class DemoRequestVo extends HashMap<String,Object> {
 
     public String getAppKey() {
-        return String.valueOf(get(HttpConstant.APP_KEY));
+        return String.valueOf(get(HttpConst.APP_KEY));
     }
 
     public DemoRequestVo setAppKey(String appKey) {
-        put(HttpConstant.APP_KEY, appKey);
+        put(HttpConst.APP_KEY, appKey);
         return this;
     }
 
     public String getTimestamp() {
-        return String.valueOf(get(HttpConstant.TIMESTAMP));
+        return String.valueOf(get(HttpConst.TIMESTAMP));
     }
 
     public DemoRequestVo setTimestamp(String timestamp) {
-        put(HttpConstant.TIMESTAMP, timestamp);
+        put(HttpConst.TIMESTAMP, timestamp);
         return this;
     }
 
 
     public String getData() {
-        return String.valueOf(get(HttpConstant.DATA));
+        return String.valueOf(get(HttpConst.DATA));
     }
 
     public String getSessionKey() {
-        return String.valueOf(get(HttpConstant.SESSION_KEY));
+        return String.valueOf(get(HttpConst.SESSION_KEY));
     }
 
     public DemoRequestVo setSessionKey(String sessionKey) {
-        put(HttpConstant.SESSION_KEY, sessionKey);
+        put(HttpConst.SESSION_KEY, sessionKey);
         return this;
     }
 
 
 
     public String getSign() {
-        return String.valueOf(get(HttpConstant.SIGN));
+        return String.valueOf(get(HttpConst.SIGN));
     }
 
     public DemoRequestVo setSign(String sign) {
-        put(HttpConstant.SIGN, sign);
+        put(HttpConst.SIGN, sign);
         return this;
     }
 
@@ -71,27 +71,27 @@ public class DemoRequestVo extends HashMap<String,Object> {
 
 
     public DemoRequestVo setData(Object data) {
-        put(HttpConstant.DATA, data);
+        put(HttpConst.DATA, data);
         return this;
     }
 
 
 
     public String getMethod() {
-        return String.valueOf(get(HttpConstant.METHOD));
+        return String.valueOf(get(HttpConst.METHOD));
     }
 
     public DemoRequestVo setMethod(String method) {
-        put(HttpConstant.METHOD, method);
+        put(HttpConst.METHOD, method);
         return this;
     }
 
     public String getPath() {
-        return String.valueOf(get(HttpConstant.PATH));
+        return String.valueOf(get(HttpConst.PATH));
     }
 
     public DemoRequestVo setPath(String path) {
-        put(HttpConstant.PATH, path);
+        put(HttpConst.PATH, path);
         return this;
     }
 

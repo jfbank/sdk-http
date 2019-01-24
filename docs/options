@@ -1,0 +1,24 @@
+-classpath
+'D:/Developer/Maven/LocalRepository/commons-logging/commons-logging/1.2/commons-logging-1.2.jar;D:/Developer/Maven/LocalRepository/org/jetbrains/annotations/13.0/annotations-13.0.jar;D:/Developer/Maven/LocalRepository/com/alibaba/fastjson/1.2.47/fastjson-1.2.47.jar;D:/Developer/Maven/LocalRepository/org/json/json/20170516/json-20170516.jar;D:/Developer/Maven/LocalRepository/org/apache/httpcomponents/httpcore/4.4.6/httpcore-4.4.6.jar;D:/Developer/Maven/LocalRepository/commons-codec/commons-codec/1.9/commons-codec-1.9.jar;D:/Developer/Maven/LocalRepository/ch/qos/logback/logback-core/1.2.3/logback-core-1.2.3.jar;D:/Developer/Maven/LocalRepository/org/apache/httpcomponents/httpclient/4.5.3/httpclient-4.5.3.jar;D:/Developer/Maven/LocalRepository/ch/qos/logback/logback-classic/1.2.3/logback-classic-1.2.3.jar;D:/Developer/Maven/LocalRepository/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar;D:/Developer/Maven/LocalRepository/commons-lang/commons-lang/2.6/commons-lang-2.6.jar'
+-encoding
+'UTF-8'
+-protected
+-sourcepath
+'D:/Work/JAVA/JiuFu/AntiFraudAPI/Code/anti_fraud_service/afs-http/src/main/java'
+-author
+-bottom
+'Copyright &#169; 2019. All rights reserved.'
+-charset
+'UTF-8'
+-d
+'D:/Work/JAVA/JiuFu/AntiFraudAPI/Code/anti_fraud_service/afs-http/target/apidocs'
+-docencoding
+'UTF-8'
+-doctitle
+'afs-http 1.0-SNAPSHOT API'
+-linkoffline
+'https://docs.oracle.com/javase/8/docs/api' 'D:/Work/JAVA/JiuFu/AntiFraudAPI/Code/anti_fraud_service/afs-http/target/javadoc-bundle-options'
+-use
+-version
+-windowtitle
+'afs-http 1.0-SNAPSHOT API'

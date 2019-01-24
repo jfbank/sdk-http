@@ -27,6 +27,18 @@ public class GzipUtils {
 //        return Base64.encodeBase64URLSafeString(gzip);
 //    }
 
+    /**压缩后, 返回base64url编码字符
+     * @param source
+     * @return
+     */
+    public static String gzip2b64u(String source) {
+        byte[] gzip = gzip(source);
+        if (gzip != null) {
+            return Base64.encodeBase64URLSafeString(gzip);
+        }
+        return null;
+    }
+
     public static byte[] gzip(String source) {
         return gzipBytes(source.getBytes(UTF8));
         //return Base64.getEncoder().encodeToString(gout.toByteArray());
@@ -86,10 +98,28 @@ public class GzipUtils {
         return new BufferedReader(new InputStreamReader(new GZIPInputStream(in)));
     }
 
+    /**解压普通字符串
+     * @param gziped
+     * @return
+     * @throws IOException
+     */
     public static String ungzipString(String gziped) throws IOException {
         byte[] bytes = ungzipBytes(gziped.getBytes(UTF8));
 
         return new String(bytes,UTF8);
+    }
+
+    /**解压 baset64 OR base64Url 编码的字符串
+     * @param b64
+     * @return
+     */
+    public static String ungzipb64(String b64) throws IOException {
+        if (b64 == null) {
+            return null;
+        }
+        byte[] bytes = Base64.decodeBase64(b64);
+        byte[] unziped = ungzipBytes(bytes);
+        return new String(unziped, UTF8);
     }
 
     public static byte[] ungzipBytes(byte[] gziped) throws IOException {

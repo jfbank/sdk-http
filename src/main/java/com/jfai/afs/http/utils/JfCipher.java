@@ -1,6 +1,6 @@
 package com.jfai.afs.http.utils;
 
-import com.alibaba.fastjson.JSON;
+import com.jfai.afs.http.bean.HttpVo;
 import com.jfai.afs.http.constant.HttpConst;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -11,7 +11,6 @@ import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -65,7 +64,7 @@ public class JfCipher {
      * @throws InvalidKeyException
      * @throws SignatureException
      */
-    public static void encryptAndSign(Map vo, String peerPubKey, String selfPrvKey, String appSecret, String aesKey, boolean doZip)
+    public static void encryptAndSign(HttpVo vo, String peerPubKey, String selfPrvKey, String appSecret, String aesKey, boolean doZip)
             throws InvalidKeySpecException, InvalidKeyException, SignatureException {
         long tt0 = System.currentTimeMillis();
         assert vo != null : "`vo` (to be encrypted data must be not null)";
@@ -77,7 +76,7 @@ public class JfCipher {
         if (noAesKey) log.debug("Generate AES key: {}, cost {}ms", sessionKey, t1 - t0);
 
         //对data字段用AES密钥(sessionKey)加密
-        String data = CommonUtil.getJsonString(vo.get(HttpConst.DATA));
+        String data = vo.getData(); // 取出来就是json字符
 
         byte[] bitData;
 
@@ -90,7 +89,8 @@ public class JfCipher {
                 log.debug("gzip cost: {}ms, source size: {}KB, after gzip: {}KB, compression ratio: {}",
                         gz1 - gz0, data.getBytes().length / 1024.0, bitData.length / 1024.0, data.getBytes().length / (bitData.length + 0.0));
                 // 设置压缩标记
-                vo.put(HttpConst.ZIP, true);
+                //vo.put(HttpConst.ZIP, true);
+                vo.setZip(true);
             } else {
                 bitData = data.getBytes(UTF8);
             }
@@ -100,7 +100,8 @@ public class JfCipher {
             String enData = AES.encrypt(bitData, sessionKey);
             long t3 = System.currentTimeMillis();
             log.debug("AES encrypt data({} chars), cost {}ms", data.length(), t3 - t2);
-            vo.put(HttpConst.DATA, enData);
+            //vo.put(HttpConst.DATA, enData);
+            vo.setData(enData);
         } else {
             log.debug("`data` is null, no need for encrypting");
         }
@@ -110,18 +111,21 @@ public class JfCipher {
         String enSsk = RSA.encrypt(sessionKey, peerPubKey);      //NoSuchPaddingException
         long t5 = System.currentTimeMillis();
         log.debug("RSA encrypt sessionKey({} chars), cost {}ms", sessionKey.length(), t5 - t4);
-        vo.put(HttpConst.SESSION_KEY, enSsk);
+        //vo.put(HttpConst.SESSION_KEY, enSsk);
+        vo.setSessionKey(enSsk);
 
         // 加密后, 要加上 加密标记 encryption=true
-        vo.put(HttpConst.ENCRYPTION, true);
+        //vo.put(HttpConst.ENCRYPTION, true);
+        vo.setEncryption(true);
 
         //用己方的RSA私钥签名
-        String signSrc = buildSignSource(vo, appSecret);
+        String signSrc = buildSignSource(vo.toMap(), appSecret);
         long t6 = System.currentTimeMillis();
         String sign = RSA.sign(signSrc, selfPrvKey);
         long t7 = System.currentTimeMillis();
         log.debug("RSA sign({} chars), cost {}ms", signSrc.length(), t7 - t6);
-        vo.put(HttpConst.SIGN, sign);
+        //vo.put(HttpConst.SIGN, sign);
+        vo.setSign(sign);
         long tt1 = System.currentTimeMillis();
         log.debug("encryptAndSign cost: {}ms", tt1 - tt0);
     }
@@ -140,7 +144,7 @@ public class JfCipher {
      * @throws InvalidKeySpecException
      * @throws SignatureException
      */
-    public static void encryptAndSign(Map vo, String peerPubKey, String selfPrvKey, String appSecret, boolean doZip)
+    public static void encryptAndSign(HttpVo vo, String peerPubKey, String selfPrvKey, String appSecret, boolean doZip)
             throws InvalidKeyException, InvalidKeySpecException, SignatureException {
         encryptAndSign(vo, peerPubKey, selfPrvKey, appSecret, null, doZip);
     }
@@ -159,7 +163,7 @@ public class JfCipher {
      * @throws InvalidKeySpecException
      * @throws SignatureException
      */
-    public static void encryptAndSign(Map vo, String peerPubKey, String selfPrvKey, String appSecret)
+    public static void encryptAndSign(HttpVo vo, String peerPubKey, String selfPrvKey, String appSecret)
             throws InvalidKeyException, InvalidKeySpecException, SignatureException {
         encryptAndSign(vo, peerPubKey, selfPrvKey, appSecret, null, false);
     }
@@ -188,11 +192,11 @@ public class JfCipher {
      * @throws InvalidKeyException
      * @throws SignatureException
      */
-    public static boolean checkSign(Map<String, Object> vo, String peerPubKey, String appSecret) throws InvalidKeySpecException, InvalidKeyException, SignatureException {
+    public static boolean checkSign(HttpVo vo, String peerPubKey, String appSecret) throws InvalidKeySpecException, InvalidKeyException, SignatureException {
         //用对方RSA公钥验签
         long t0 = System.currentTimeMillis();
-        String content = buildSignSource(vo, appSecret);
-        boolean b = RSA.checkSign(content, String.valueOf(vo.get(HttpConst.SIGN)), peerPubKey);
+        String content = buildSignSource(vo.toMap(), appSecret);
+        boolean b = RSA.checkSign(content, vo.getSign(), peerPubKey);
         long t1 = System.currentTimeMillis();
         log.debug("RSA check sign({} chars), cost {}ms", content.length(), t1 - t0);
         return b;
@@ -210,7 +214,7 @@ public class JfCipher {
      * @throws InvalidKeySpecException
      * @throws InvalidKeyException
      */
-    public static <T> void decrypt(Map<String, Object> vo, String selfPrvKey) throws InvalidKeySpecException, InvalidKeyException, IOException {
+    public static <T> void decrypt(HttpVo vo, String selfPrvKey) throws InvalidKeySpecException, InvalidKeyException, IOException {
         decrypt(vo, selfPrvKey,  false);
     }
 
@@ -230,23 +234,23 @@ public class JfCipher {
      * @throws InvalidKeySpecException
      * @throws InvalidKeyException
      */
-    public static <T> void decrypt(Map<String, Object> vo, String selfPrvKey, boolean isUngzip) throws InvalidKeySpecException, InvalidKeyException, IOException {
+    public static <T> void decrypt(HttpVo vo, String selfPrvKey, boolean isUngzip) throws InvalidKeySpecException, InvalidKeyException, IOException {
         assert vo != null : "`vo` mustn't be null";
         assert selfPrvKey != null && !"".equals(selfPrvKey) : "`selfPrvKey` mustn't be empty";
 
-        String enSsk = String.valueOf(vo.get(HttpConst.SESSION_KEY));
+        String enSsk = vo.getSessionKey();
         long t0 = System.currentTimeMillis();
         String deSsk = RSA.decrypt(enSsk, selfPrvKey);
         long t1 = System.currentTimeMillis();
         log.trace("RSA decrypt encrypted sessionKey({} chars), cost {}ms", enSsk.length(), t1 - t0);
-        vo.put(HttpConst.SESSION_KEY, deSsk);
+        vo.setSessionKey(deSsk);
 
-        //进入解密的环节, data 字段必然也必须是 String
-        Object dataObj = vo.get(HttpConst.DATA);
+
+        String data = vo.getData();
         //data 字段不为null时才需要解密
-        if (dataObj != null) {
-            // 进入解密时, data 的值必须是String
-            String data = String.valueOf(dataObj);
+        if (data != null) {
+//            // 进入解密时, data 的值必须是String
+//            String data = String.valueOf(dataObj);
             long t2 = System.currentTimeMillis();
             String deData = null;
             byte[] ungzipDeData = null;
@@ -270,6 +274,8 @@ public class JfCipher {
                 log.debug("ungzip cost:{}ms, {} KB", g1 - g0, deData.getBytes().length / 1024.0);
             }
 
+            // 将解密后的明文替换掉密文
+            vo.setData(deData);
         } else {
             log.info("`data` is null, need not to decrypt");
         }
@@ -343,7 +349,7 @@ public class JfCipher {
 
 
     public static void main(String[] args) {
-        System.out.println(CommonUtil.isPrimitive(HttpConst.Encryption.MD5));
+        System.out.println(TypeUtil.isSimple(HttpConst.Encryption.MD5));
         System.out.println(String.valueOf(HttpConst.Encryption.MD5));
     }
 

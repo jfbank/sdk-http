@@ -2,7 +2,7 @@ package com.jfai.afs.http.constant;
 
 import java.nio.charset.Charset;
 
-public interface HttpConstant {
+public interface HttpConst {
 
     Charset UTF8 = Charset.forName("UTF-8");
 
@@ -34,6 +34,8 @@ public interface HttpConstant {
 //    String AUTHORIZATION = "Authorization";
 //    String SIGNATURE="Signature";
     String ZIP = "zip";
+    String TOKEN = "token";
+
 
     //----加密类别----//
     enum Encryption {

@@ -1,15 +1,9 @@
-package com.jfai.afs.http.sdk;
+package com.jfai.afs.http.client;
 
 import com.jfai.afs.http.bean.JfResponse;
-import com.jfai.afs.http.utils.HttpUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.junit.Test;
 
 import java.net.BindException;
-import java.nio.charset.Charset;
-
-import static org.junit.Assert.*;
 
 public class JfPooledHttpClientTest {
 
