@@ -29,11 +29,20 @@
                 <version>3.0.0</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
+                    <!--适合放在父pom中, 用于聚合所有模块的Javadoc-->
                     <!--<aggregate>true</aggregate>-->
                     <charset>UTF-8</charset>
                     <docencoding>UTF-8</docencoding>
-                    <!--javadoc语法要求太高, 很容易报错停止-->
+                    <!--javadoc语法要求太高, 很容易报错停止, 这项配置可以忽略错误, 成功生成Javadoc-->
                     <failOnError>false</failOnError>
+                    <!--配置自定义标签-->
+                    <!--<tags>-->
+                        <!--<tag>-->
+                            <!--<name>Description</name>-->
+                            <!--<placement>a</placement>-->
+                            <!--<head>用途</head>-->
+                        <!--</tag>-->
+                    <!--</tags>-->
                 </configuration>
                 <executions>
                     <execution>

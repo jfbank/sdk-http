@@ -24,6 +24,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -42,9 +43,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
+/**基本的通用http请求工具类
  * <p>
- *     基本的通用http请求工具类, 功能全, 但使用麻烦, 作为备用.
+ *     功能全, 但使用麻烦, 作为备用.
  * </p>
  * <p>
  *     没有配置连接池.
@@ -463,12 +464,17 @@ public class HttpUtils {
     }
 
     private static HttpClient wrapClient(String url) {
-        HttpClient httpClient = new DefaultHttpClient();
+        HttpClient httpClient = getHttpClient();
         if (url.startsWith("https://")) {
             sslClient(httpClient);
         }
 
         return httpClient;
+    }
+
+    @NotNull
+    protected static HttpClient getHttpClient() {
+        return new DefaultHttpClient();
     }
 
     private static void sslClient(HttpClient httpClient) {

@@ -72,6 +72,15 @@ public class JfResponse {
         return this;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("JfResponse{");
+        sb.append("statusCode=").append(statusCode);
+        sb.append(", body=").append(body);
+        sb.append('}');
+        return sb.toString();
+    }
+
     /**
      * Enumeration of HTTP status series.
      *

@@ -1,20 +1,23 @@
-package com.jfai.afs.http.client;
+package com.jfai.afs.http.demo;
 
 import com.alibaba.fastjson.TypeReference;
 import com.jfai.afs.http.bean.JfResBody;
 import com.jfai.afs.http.bean.JfResponse;
-import com.jfai.afs.http.exception.JfConfigException;
-import com.jfai.afs.http.utils.RSA;
+import com.jfai.afs.http.client.JfClientManager;
+import com.jfai.afs.http.client.JfHttpClient;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
 
-import java.security.InvalidKeyException;
-import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JfClientManagerTest {
+/**
+ * @author Nisus Liu
+ * @version 0.0.1
+ * @email liuhejun108@163.com
+ * @date 2019/1/27 16:30
+ */
+public class DemoJfClientManager {
+    // 密钥格式: 有无首尾标记均可, 中间额空白字符(\n\t 等)不影响
     private static final  String clientPubkey = "-----BEGIN PUBLIC KEY-----\n"+
             "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDGsx_3zcCH6li-8zs8CqnEtYaiLjX-VgiFx7tbDldIdJ4rW4OW9Vv6L9MxrjY-O_J8pbz2CmNsPIsw7ey8FyOLFX0-kXunaSaLU1gDTUE9W1N8PViuDFIcTonv_ui0tomg8Vg_hca6bE_1GuDxFS3k50X8DNeIrpsVRuQ5u7oz4wIDAQAB\n"+
             "-----END PUBLIC KEY-----";
@@ -23,56 +26,7 @@ public class JfClientManagerTest {
             "-----END PRIVATE KEY-----";
     private static final String serverPubkey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyxQxnDmbP/FqGd4yf+fGmHINts1uA57H/uYibfvaJaoP2RxA0aLGSp3jZbsu4Ri5YD1msLY+sM4za9qzOs91aEsvEY8+7ABBVcJjfPhAZ71+qXQGPXGRIxY4rkrndW9Jvyw9DBg8W5CPvLVxeid2yVUdzkIP301CCCTcyCMzQcwIDAQAB";
 
-    @Test
-    public void fun2(){
-        RSA.validateRsaKeyPair(clientPubkey, clientPrvkey);
-    }
 
-    @Test
-    public void fun4(){
-        // post form
-        JfClientManager m = buildJfClientManager();
-        JfHttpClient c = m.getJfHttpClientEnc();
-        try {
-            JfResponse res = c.doPostForm("test/form",null, "下载的数据");
-            if (res.is2xx()) {
-                System.out.println(res.getBody());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void fun3(){
-        // 只压缩, 不加密
-        JfClientManager m = buildJfClientManager();
-
-        JfHttpClient c = m.getJfHttpClientZip();
-        //m.validateConf(c.config());
-
-        try {
-            JfResponse res = c.doGet("test/encryption", null, "请求data");
-            if (res.is2xx()) {
-                JfResBody body = (JfResBody) res.getBody();
-                if (body.getCode()==0) {
-                    System.out.println("请求成功");
-                }else{
-                    System.out.println("请求失败");
-                }
-                System.out.println(body.toString(true));
-            }else{
-                System.out.println(res);
-            }
-
-        } catch (Exception e) {
-            System.out.println("异常咯...");
-            e.printStackTrace();
-        }
-
-    }
-
-    @Test
     public void 演示加密压缩请求(){
 
         // 构建客户端管理者实例
@@ -127,7 +81,7 @@ public class JfClientManagerTest {
     }
 
     @NotNull
-    private JfClientManager buildJfClientManager() {
+    public static JfClientManager buildJfClientManager() {
         // 构建玖富客户端管理者实例
         JfClientManager m = new JfClientManager();
         // 调用config()方法设置配置项, 全局配置, 只要通过这个管理者获取的客户端都会自动继承这里的配置项
@@ -143,109 +97,4 @@ public class JfClientManagerTest {
     }
 
 
-    @Test
-    public void config() {
-        final Config c = new Config();
-        ArrayList<Thread> threads = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            final int finalI = i;
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    c.setAppKey(finalI + "");
-                }
-            });
-            threads.add(t);
-        }
-
-        for (Thread t : threads) {
-            t.start();
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        System.out.println(c);
-        System.out.println("done...");
-
-    }
-
-    @Test
-    public void getJfHttpClient() {
-        JfClientManager jfClientManager = new JfClientManager();
-        jfClientManager.config().setAppKey("AK007")
-                .setAppSecret("AS")
-                .setDefaultHost("http://localhost")
-                .setServerPubkey("server pubkey")
-                .setClientPubkey("client pubkey")
-                .setClientPrvkey("client privkey");
-        JfHttpClient c = jfClientManager.getJfHttpClient();
-
-        System.out.println(c);
-
-        JfHttpClient enc = jfClientManager.getJfHttpClientEnc();
-        System.out.println(enc);
-
-        JfHttpClient enczip = jfClientManager.getJfHttpClientEncZip();
-        System.out.println(enczip);
-
-    }
-
-    @Test
-    public void getJfHttpClientEnc() {
-        String src = "Hi~ 我是测试客户端RSA密钥对是否有效的原文^~^";
-        System.out.println("test source: "+src);
-        String enc = null;
-        try {
-            enc = RSA.encrypt(src, clientPubkey);
-        } catch (InvalidKeySpecException | InvalidKeyException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("test rsa encrypt: "+enc);
-        String dec = null;
-        try {
-            dec = RSA.decrypt(enc, clientPrvkey);
-        } catch (InvalidKeySpecException | InvalidKeyException e) {
-            e.printStackTrace();
-        }
-        System.out.println("test rsa decrypt: "+ dec);
-
-        System.out.println("------");
-        String sign = null;
-        try {
-            sign = RSA.sign(src, clientPrvkey);
-        } catch (Exception e) {
-            throw new JfConfigException("'client prvkey' 签名异常", e);
-        }
-        System.out.println(sign);
-        boolean b = false;
-        try {
-            b = RSA.checkSign(src, sign, clientPubkey);
-        } catch (Exception e) {
-            throw new JfConfigException("'client pubkey' 验签异常", e);
-        }
-        if (!b) {
-            throw new JfConfigException("'client pubkey' 验签失败");
-        }
-
-    }
-
-    @Test
-    public void getJfHttpClientZip() {
-    }
-
-    @Test
-    public void getJfHttpClientEncZip() {
-    }
-
-    @Test
-    public void getJfHttpClient1() {
-    }
-
-    @Test
-    public void getJfHttpClient2() {
-    }
 }

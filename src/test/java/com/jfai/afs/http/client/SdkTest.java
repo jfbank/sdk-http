@@ -21,7 +21,7 @@ public class SdkTest {
 
     @Test
     public void post(){
-        JfPooledHttpClient c = getJfPooledHttpClient();
+        JfPoolHttpClient c = getJfPooledHttpClient();
         // 准备请求数据
         HashMap<String, Object> data = new HashMap<>();
         data.put("name", "libai");
@@ -51,7 +51,7 @@ public class SdkTest {
     @Test
     public void zip(){
         //JfHttpClient c = new JfHttpClient();
-        JfPooledHttpClient c = getJfPooledHttpClient();
+        JfPoolHttpClient c = getJfPooledHttpClient();
         // 准备请求数据
         HashMap<String, Object> data = new HashMap<>();
         data.put("name", "libai");
@@ -78,7 +78,7 @@ public class SdkTest {
     @Test
     public void poolClient(){
         //JfHttpClient c = new JfHttpClient();
-        JfPooledHttpClient c = new JfPooledHttpClient();
+        JfPoolHttpClient c = new JfPoolHttpClient();
         c.config().setEncryption(true)
                 .setAppKey("AK531894660444999680")
                 .setAppSecret("b289cd954ae02d176d2b0c8f6d2f4c89")
@@ -173,8 +173,8 @@ public class SdkTest {
     }
 
 
-    private JfPooledHttpClient getJfPooledHttpClient() {
-        JfPooledHttpClient c = new JfPooledHttpClient();
+    private JfPoolHttpClient getJfPooledHttpClient() {
+        JfPoolHttpClient c = new JfPoolHttpClient();
         c.config().setEncryption(true)
                 .setAppKey("AK531894660444999680")
                 .setAppSecret("b289cd954ae02d176d2b0c8f6d2f4c89")

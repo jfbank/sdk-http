@@ -35,10 +35,10 @@ public class JfClientManager {
     }
 
     /**
-     * 默认构建带线程池的JfHttpClient: {@link JfPooledHttpClient}
+     * 默认构建带线程池的JfHttpClient: {@link JfPoolHttpClient}
      * <p>
      *     自动继承使用{@link JfClientManager}的
-     *     配置参数({@link Config}).
+     *     配置参数({@link Config}). 但随后<code>JfHttpClient</code>的定制配置会覆盖继承的全局配置.
      * </p>
      * @return
      */
@@ -61,7 +61,7 @@ public class JfClientManager {
     public JfHttpClient getJfHttpClientEnc() {
         JfHttpClient c = getJfHttpClient();
         c.config().setEncryption(true);
-        validateConf();
+        //validateConf(c.config());
 
         return c;
     }
@@ -108,7 +108,7 @@ public class JfClientManager {
      * @return
      */
     public JfHttpClient getJfHttpClient(boolean pooled) {
-        JfHttpClient client = pooled ? new JfPooledHttpClient() : new JfHttpClient();
+        JfHttpClient client = pooled ? new JfPoolHttpClient() : new JfHttpClient();
         // 继承全局配置
         Config c = client.config();
         c.extend(this.config);
@@ -127,12 +127,12 @@ public class JfClientManager {
      *
      * @return
      */
-    public boolean validateConf() {
+    public boolean validateConf(Config config) {
         log.trace("validateConf: {}", config);
         if (config.getEncryption()) {
-            if (StringUtils.isBlank(config.getAppSecret())) {
-                throw new JfConfigException("lack of 'appSecret' config");
-            }
+//            if (StringUtils.isBlank(config.getAppSecret())) {
+//                throw new JfConfigException("lack of 'appSecret' config");
+//            }
 
             if (StringUtils.isBlank(config.getServerPubkey())) {
                 throw new JfConfigException("lack of 'serverPubkey' config");
@@ -150,14 +150,6 @@ public class JfClientManager {
             if (log.isTraceEnabled()) {
                 validateClientKey(config.getClientPubkey(), config.getClientPrvkey());
             }
-        }
-
-        // 所有请求都需要 appKey
-        if (StringUtils.isBlank(config.getAppKey())) {
-            throw new JfConfigException("lack of 'appKey' config");
-        }
-        if (StringUtils.isBlank(config.getAppSecret())) {
-            throw new JfConfigException("lack of 'appSecret' config");
         }
 
         return true;

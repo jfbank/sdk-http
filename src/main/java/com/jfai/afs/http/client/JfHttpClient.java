@@ -42,12 +42,13 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import org.jetbrains.annotations.Contract;
 
 /**
  * <p>
- *     注意: 对于同样配置的多个请求, 可以复用一个 JfHttpClient 实例.
- *       否则, 是线程不安全的.
+ * 注意: 对于同样配置的多个请求, 可以复用一个 JfHttpClient 实例.
+ * 否则, 是线程不安全的.
  * </p>
  *
  * @author 玖富AI
@@ -74,7 +75,8 @@ public class JfHttpClient {
     }
 
 
-    public JfHttpClient() {}
+    public JfHttpClient() {
+    }
 
     /**
      * get
@@ -84,7 +86,7 @@ public class JfHttpClient {
      * </p>
      *
      * @param headers 可null
-     * @param data 接口级别参数, 可null
+     * @param data    接口级别参数, 可null
      * @return
      * @throws Exception
      */
@@ -112,13 +114,13 @@ public class JfHttpClient {
     }
 
 
-
     /**
      * post form
      * <p>
-     *     请求体会格式化成url格式, name=libai&age=19, 且执行了urlencode.
-     *     Controller方法需要使用@RequestParam接收参数, @RequestBody无效(Spring框架).
+     * 请求体会格式化成url格式, name=libai&age=19, 且执行了urlencode.
+     * Controller方法需要使用@RequestParam接收参数, @RequestBody无效(Spring框架).
      * </p>
+     *
      * @param url
      * @param headers
      * @param data
@@ -144,7 +146,7 @@ public class JfHttpClient {
 
             for (String key : params.keySet()) {
                 Object v = params.get(key);
-                if(v!=null) nameValuePairList.add(new BasicNameValuePair(key, String.valueOf(v)));
+                if (v != null) nameValuePairList.add(new BasicNameValuePair(key, String.valueOf(v)));
             }
             UrlEncodedFormEntity formEntity = new UrlEncodedFormEntity(nameValuePairList, HttpConst.UTF8);
             formEntity.setContentType("application/x-www-form-urlencoded; charset=UTF-8");
@@ -160,10 +162,9 @@ public class JfHttpClient {
      * Post json
      *
      * <p>
-     *     虽然, post请求可以同时带上url参数和请求体, 但是为了简单.
-     *     本API在post请求时, 将请求数据统一放入请求体. 不提供同时支持url参数和请求体的API.
+     * 虽然, post请求可以同时带上url参数和请求体, 但是为了简单.
+     * 本API在post请求时, 将请求数据统一放入请求体. 不提供同时支持url参数和请求体的API.
      * </p>
-     *
      *
      * @param url
      * @param headers
@@ -444,30 +445,29 @@ public class JfHttpClient {
         if (null != querys) {
             StringBuilder sbQuery = new StringBuilder();
             for (Map.Entry<String, Object> query : querys.entrySet()) {
-                if (0 < sbQuery.length()) {
-                    sbQuery.append("&");
-                }
-               //region key为空时, 参数对就不要了 --Nisus Liu 2019/1/15 1:37
+                //region key为空时, 参数对就不要了 --Nisus Liu 2019/1/15 1:37
                /*
                 *  if (StringUtils.isBlank(query.getKey()) && StringUtils.isNotBlank(query.getValue())) {
                      sbQuery.append(query.getValue());
                  }
                 */
-               //endregion
-                if (query.getKey() != null) {
+                //endregion
+                // k,v 同时有效, 才拼接
+                if (query.getKey() != null && query.getValue() != null) {
+                    if (0 < sbQuery.length()) {
+                        sbQuery.append("&");
+                    }
                     try {
                         // 对key也url编码
                         sbQuery.append(URLEncoder.encode(query.getKey(), HttpConst.UTF8.name()));
                     } catch (UnsupportedEncodingException e) {
                         throw new RuntimeException(e);
                     }
-                    if (query.getValue() != null) {
-                        sbQuery.append("=");
-                        try {
-                            sbQuery.append(URLEncoder.encode(String.valueOf(query.getValue()), HttpConst.UTF8.name()));
-                        } catch (UnsupportedEncodingException e) {
-                            throw new RuntimeException(e);
-                        }
+                    sbQuery.append("=");
+                    try {
+                        sbQuery.append(URLEncoder.encode(String.valueOf(query.getValue()), HttpConst.UTF8.name()));
+                    } catch (UnsupportedEncodingException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             }
@@ -511,6 +511,7 @@ public class JfHttpClient {
 
     /**
      * 以 'http://' 或 'https://' 开头的为绝对路径
+     *
      * @param url
      * @return
      */
@@ -529,7 +530,7 @@ public class JfHttpClient {
             if (url.startsWith(HTTPS_PROTO)) {
                 sslClient(httpClient);
             }
-        }else{
+        } else {
             if (StringUtils.isBlank(config.getDefaultHost())) {
                 throw new JfConfigException("使用相对URL时, 需要'defaultHost'配置");
             }
@@ -570,16 +571,18 @@ public class JfHttpClient {
 
     }
 
-    /**针对json的响应体的处理
+    /**
+     * 针对json的响应体的处理
      * <p>
-     *     本系统暂时仅支持返回json响应体. 对于响应结果的处理, 也是仅提供json格式的处理.
+     * 本系统暂时仅支持返回json响应体. 对于响应结果的处理, 也是仅提供json格式的处理.
      * </p>
+     *
      * @param resp
      * @return
      * @throws IOException
      */
     @Contract("_->!null")
-    protected JfResponse handleJsonResponse(HttpResponse resp) throws IOException{
+    protected JfResponse handleJsonResponse(HttpResponse resp) throws IOException {
         if (resp == null) {
             // 返回无body
             return new JfResponse();
@@ -596,23 +599,23 @@ public class JfHttpClient {
 
         // 若响应体是加密的, 则执行解密操作
         // 解密流程包括: 验签 -> 解密
-        if (body!=null) {
+        if (body != null) {
             // 加密响应
-            if (body.getEncryption()!=null && body.getEncryption()) {
+            if (body.getEncryption() != null && body.getEncryption()) {
                 try {
                     JfCipher.checkSign(body, config.getServerPubkey(), config.getAppSecret());
                 } catch (Exception e) {
                     throw new JfSecurityException("check sign exception", e);
                 }
                 try {
-                    JfCipher.decrypt(body, config.getClientPrvkey(), body.getZip()!=null && body.getZip());
+                    JfCipher.decrypt(body, config.getClientPrvkey(), body.getZip() != null && body.getZip());
                     log.debug("解密后的JfResBody: {}", body);
                 } catch (Exception e) {
                     throw new JfSecurityException("decrypt exception", e);
                 }
-            }else{
+            } else {
                 // 明文, 但压缩的响应
-                if (body.getZip()!=null && body.getZip()) {
+                if (body.getZip() != null && body.getZip()) {
                     String s = GzipUtils.ungzipb64(body.getData());
                     body.setData(s);
                     // 设置压缩标记
@@ -623,7 +626,7 @@ public class JfHttpClient {
         }
 
 
-        return new JfResponse(sc,body);
+        return new JfResponse(sc, body);
     }
 
 
@@ -666,39 +669,43 @@ public class JfHttpClient {
     }
 
 
-    /**自动增加玖富接口需要系统级参数
+    /**
+     * 自动增加玖富接口需要系统级参数
      * <p>
-     *     url参数包装. 开发者提供的接口级参数data, 会转换成json字符串
+     * url参数包装. 开发者提供的接口级参数data, 会转换成json字符串
      * </p>
+     *
      * @param data
      */
-    protected  <T> JfReqParam wrapReqParams(T data) {
+    protected <T> JfReqParam wrapReqParams(T data) {
         //Map<String, Object> p = new HashMap<>();
         JfReqParam reqParam = new JfReqParam();
         reqParam.setData(data);
 
 
         // 补充系统参数
-        if(config.getAppKey()!=null) reqParam.setAppKey(config.getAppKey());
+        if (config.getAppKey() != null) reqParam.setAppKey(config.getAppKey());
         reqParam.setTimestamp(System.currentTimeMillis());
         return reqParam;
     }
 
 
-    /**准备请求参数
+    /**
+     * 准备请求参数
      * <p>
-     *     <ul>
-     *         <li>补充请求需要的系统级别参数. 开发者只需要关心如何准备目标接口所需接口级参数.
-     *         而无需关心, 如: 'appKey', 'sessionKey', 'sign', ...</li>
-     *         <li>加密和压缩请求参数(由配置参数决定是否加密和压缩)</li>
-     *         <li>'data' 字段的不论是基本类型还是pojo, 都转成json字符串</li>
-     *     </ul>
+     * <ul>
+     * <li>补充请求需要的系统级别参数. 开发者只需要关心如何准备目标接口所需接口级参数.
+     * 而无需关心, 如: 'appKey', 'sessionKey', 'sign', ...</li>
+     * <li>加密和压缩请求参数(由配置参数决定是否加密和压缩)</li>
+     * <li>'data' 字段的不论是基本类型还是pojo, 都转成json字符串</li>
+     * </ul>
      * </p>
+     *
      * @param <T>
      * @param data
      * @return
      */
-    protected  <T> JfReqParam prepareParams(T data) throws JfSecurityException {
+    protected <T> JfReqParam prepareParams(T data) throws JfSecurityException {
         // 补充系统级参数
         JfReqParam params = wrapReqParams(data);
 
@@ -711,7 +718,7 @@ public class JfHttpClient {
                 } catch (Exception e) {
                     throw new JfSecurityException("encrypt and sign exception", e);
                 }
-            }else{
+            } else {
                 // 不加密, 但压缩
                 if (config.getZip()) {
                     String s = GzipUtils.gzip2b64u(params.getData());

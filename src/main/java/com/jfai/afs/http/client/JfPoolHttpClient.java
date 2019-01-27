@@ -21,7 +21,7 @@ import java.net.UnknownHostException;
  * 
  * @author 大漠知秋
  */
-public class JfPooledHttpClient extends JfHttpClient{
+public class JfPoolHttpClient extends JfHttpClient{
 
     /** 全局连接池对象 */
     protected static final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();

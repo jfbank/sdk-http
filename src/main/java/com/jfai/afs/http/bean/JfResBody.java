@@ -3,7 +3,7 @@ package com.jfai.afs.http.bean;
 import com.jfai.afs.http.utils.JSONUtil;
 
 /**
- * <code>JfResBody</code> Map 格式的实现类
+ * <code>HttpVo</code>的实现类, 用于接收封装响应数据
  * @author Nisus Liu
  * @version 0.0.1
  * @email liuhejun108@163.com

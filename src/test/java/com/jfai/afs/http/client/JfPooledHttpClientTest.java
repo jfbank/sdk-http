@@ -30,7 +30,7 @@ public class JfPooledHttpClientTest {
     @Test
     public void fun2() throws InterruptedException {
 //        final JfHttpClient c = new JfHttpClient();
-        final JfPooledHttpClient c = new JfPooledHttpClient();
+        final JfPoolHttpClient c = new JfPoolHttpClient();
 
         Runnable runnable = new Runnable() {
 
@@ -71,7 +71,7 @@ public class JfPooledHttpClientTest {
 
     @Test
     public void fun1() throws Exception {
-        JfPooledHttpClient c = new JfPooledHttpClient();
+        JfPoolHttpClient c = new JfPoolHttpClient();
         JfResponse resp = c.doGet("http://localhost:18081/test", null, null);
         System.out.println(resp.getBody());
 
@@ -79,8 +79,8 @@ public class JfPooledHttpClientTest {
 
     @Test
     public void fun() throws Exception {
-        JfPooledHttpClient c1 = new JfPooledHttpClient();
-        JfPooledHttpClient c2 = new JfPooledHttpClient();
+        JfPoolHttpClient c1 = new JfPoolHttpClient();
+        JfPoolHttpClient c2 = new JfPoolHttpClient();
 
     }
 
