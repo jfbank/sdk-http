@@ -19,7 +19,7 @@ import java.util.Map;
 public class DemoJfClientManager {
     // 密钥格式: 有无首尾标记均可, 中间额空白字符(\n\t 等)不影响
     private static final  String clientPubkey = "-----BEGIN PUBLIC KEY-----\n"+
-            "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDGsx_3zcCH6li-8zs8CqnEtYaiLjX-VgiFx7tbDldIdJ4rW4OW9Vv6L9MxrjY-O_J8pbz2CmNsPIsw7ey8FyOLFX0-kXunaSaLU1gDTUE9W1N8PViuDFIcTonv_ui0tomg8Vg_hca6bE_1GuDxFS3k50X8DNeIrpsVRuQ5u7oz4wIDAQAB\n"+
+            "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDGsx_3zcCH6li-8zs8CqnEtYaiLjX-VgiFx7tbDldIdJ4rW4OW9Vv6L9MxrjY-O_J8pbz2CmNsPIsw7ey8FyOLFX0-kXunaSaLU1gDTUE9W1N8PViuDFIcTonv_ui0tomg8Vg_hca6bE_1GuDxFS3k50X8DNeIrpsVRuQ5u7oz4wIDAQAB"+
             "-----END PUBLIC KEY-----";
     private static final String clientPrvkey = "-----BEGIN PRIVATE KEY-----\n" +
             "MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAMazH_fNwIfqWL7zOzwKqcS1hqIuNf5WCIXHu1sOV0h0nitbg5b1W_ov0zGuNj478nylvPYKY2w8izDt7LwXI4sVfT6Re6dpJotTWANNQT1bU3w9WK4MUhxOie_-6LS2iaDxWD-FxrpsT_Ua4PEVLeTnRfwM14iumxVG5Dm7ujPjAgMBAAECgYBfOAvDxrfS6jypFQp31WxRtePU6Gw7e6MN6Q8hrZeqQyhhArPmraHsHOsKTb_0xumHTi1lgsjuX30cb4gZAsWm0rCNsraEFO6OfBYPHrA3Z5EtW1i3KYgzHAYJiSiArA1kU5ueu29li-WQb88Z5CJoD8rp0lN0OaUowIwS5rI60QJBAO0aFclzKph4Q5YiW5isYG0lEMxMMEXkg1atoajHy-sX06cdZEYr0N0OGRzKnQwCwyzgz9P42ASvl7L4tZRjyKcCQQDWiXegdwd1BbMaV44BohE_TGSGZ5YQYcoJiiDLIdLc-CYQ3IbXWU13wZJCykuY5_74JD4YlI6-zv2F7PSR-uZlAkBo2wtdjr_8s9r373PgngL64dR-9Qa4MinfUGRY1xsYee4RTs9EtSXmTNDQSc6QPDyCgV2H2dn2oI0PCiyLVmGrAkBe3rlk314P1K5oBrHIbRe9axXFDcehhOzoHQn1agaqKp4CtNJ4JoiIXbRFDtoxSt5IcxZ2njMlk7ku4SMh7ta1AkEAoh-GjGNFVm_-I8uZbZrc60M-m5UFDVSjQrxKULtpVRyYjwAvJaNPmMHZB_b5DdaLr0UdExd_CNYRWjiLWmF8JQ\n" +
