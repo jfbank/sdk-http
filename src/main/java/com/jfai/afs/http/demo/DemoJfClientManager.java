@@ -5,6 +5,7 @@ import com.jfai.afs.http.bean.JfResBody;
 import com.jfai.afs.http.bean.JfResponse;
 import com.jfai.afs.http.client.JfClientManager;
 import com.jfai.afs.http.client.JfHttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -29,7 +30,7 @@ public class DemoJfClientManager {
 
     public void 演示加密压缩请求(){
 
-        // 构建客户端管理者实例
+        // 构建客户端管理者实例(下文封装的方法)
         JfClientManager m = buildJfClientManager();
 
         // 从管理者里获取新的玖富http客户端
@@ -37,6 +38,9 @@ public class DemoJfClientManager {
         // 指定加密,压缩
         client.config().setEncryption(true).setZip(true);
         // 或, 使用快捷方式 m.getJfHttpClientEncZip(), 等价于上面的两项配置
+
+        // 设置RequestConfig, 如使用缺省值, 请跳过, 详细说明见下文
+        // client.setRequestConfig(RequestConfig实例);
 
         // 准备接口级参数
         HashMap<String, Object> data = new HashMap<>();
@@ -77,6 +81,21 @@ public class DemoJfClientManager {
             e.printStackTrace();
         }
 
+
+        // 关于 RequestConfig 设置说明
+        // 默认设置了两个主要参数: 连接超时时间3秒, 获取数据超时时间3秒
+        // 开发者可根据需要自定义RequestConfig
+        // 示例:
+        client.setRequestConfig(RequestConfig.custom()
+                // 设置从connect Manager获取Connection 超时时间，单位毫秒(针对有连接池的客户端)
+                .setConnectionRequestTimeout(1000)
+                // 设置连接超时时间, 单位ms
+                .setConnectTimeout(3000)
+                // 请求获取数据的超时时间, 单位ms, 如果访问一个接口，多少时间内无法返回数据，就直接放弃此次调用。
+                .setSocketTimeout(3000)
+                // ...
+                .build()
+        );
 
     }
 

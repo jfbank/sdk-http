@@ -25,10 +25,10 @@ public class JfPoolHttpClient extends JfHttpClient{
 
     /** 全局连接池对象 */
     protected static final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
-    /**
-     * 创建Http请求配置参数
-     */
-    private static RequestConfig requestConfig;
+//    /**
+//     * 创建Http请求配置参数
+//     */
+//    private static RequestConfig requestConfig;
     /**
      * 测出超时重试机制为了防止超时不生效而设置
      *  如果直接放回false,不重试
@@ -45,18 +45,6 @@ public class JfPoolHttpClient extends JfHttpClient{
         connManager.setMaxTotal(200);
         // 设置每个路由的最大连接数 / 受cpu限制, 过多无益
         connManager.setDefaultMaxPerRoute(10);
-
-        // 创建Http请求配置参数
-        requestConfig = RequestConfig.custom()
-                // 默认是0, 即未配置timeout, 这样会一直等待下去
-                // 获取连接超时时间 / ms / 每个响应处理结束后要close, 避免连接没有及时释放, 出现Timeout waiting for connection from pool异常
-                .setConnectionRequestTimeout(1800000)   // 30min=1800000
-                // 请求超时时间
-                .setConnectTimeout(1800000)
-                // 响应超时时间
-                .setSocketTimeout(1800000)
-                .build();
-
 
         httpRequestRetryHandler = new HttpRequestRetryHandler() {
             @Override
@@ -102,6 +90,7 @@ public class JfPoolHttpClient extends JfHttpClient{
     public HttpClient getHttpClient() {
         // 创建httpClient
         return HttpClients.custom()
+                // 继承父类的 RequestConfig, 并且接受定制
                 // 把请求相关的超时信息设置到连接客户端
                 .setDefaultRequestConfig(requestConfig)
                 // 把请求重试设置到连接客户端

@@ -5,6 +5,7 @@ import com.jfai.afs.http.bean.JfResBody;
 import com.jfai.afs.http.bean.JfResponse;
 import com.jfai.afs.http.exception.JfConfigException;
 import com.jfai.afs.http.utils.RSA;
+import org.apache.http.client.config.RequestConfig;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -84,6 +85,9 @@ public class JfClientManagerTest {
         client.config().setEncryption(true).setZip(true);
         // 或, 使用快捷方式 m.getJfHttpClientEncZip(), 等价于上面的两项配置
 
+        //client.setRequestConfig(RequestConfig.DEFAULT); //默认的不限时间
+        // 用玖富定义的默认配置, 超过3s没有返回抛 java.net.SocketTimeoutException: Read timed out
+
         // 准备接口级参数
         HashMap<String, Object> data = new HashMap<>();
         data.put("name", "李白");
@@ -93,7 +97,7 @@ public class JfClientManagerTest {
             // url: 由于管理者配置了默认url, 这里使用接口的path即可(开头有无/无关紧要)
             // headers: 请求头, 默认配有Content-Type:application/json;charset=utf-8, 没有其它头, 可null
             // data: 接口级参数, 原样传入即可, 内部都会转成json串, 然后选择是否加密或者压缩.
-            JfResponse res = client.doGet("test/encryption", null, data);
+            JfResponse res = client.doGet("http://localhost:18081/api/test/encryption", null, data);
             // 请求是否成功响应
             if (res.is2xx()) {
                 // 拿出响应体
@@ -104,10 +108,11 @@ public class JfClientManagerTest {
                     // 方式1: 获取data字段的原始内容, json串或普通字符串, 随具体的接口决定
                     String data0 = body.getData();
                     // 方式2: 可指定类型, 自动将data的json串转成java object
-                    Map data1 = body.getData(Map.class);
+                    //Map data1 = body.getData(Map.class);
                     // 方式3: 同上, 但适用于更复杂的对象
-                    Map<String, Object> data2 = body.getData(new TypeReference<Map<String, Object>>() {
-                    });
+                    //Map<String, Object> data2 = body.getData(new TypeReference<Map<String, Object>>() {});
+
+                    System.out.println(data0);
                 }else{
                     System.out.println("请求失败");
                 }

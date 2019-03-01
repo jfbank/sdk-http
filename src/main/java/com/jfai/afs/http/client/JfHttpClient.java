@@ -17,6 +17,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
 import org.apache.http.conn.ClientConnectionManager;
@@ -25,6 +26,7 @@ import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -66,12 +68,61 @@ public class JfHttpClient {
     protected volatile Config config = new Config();
 
     /**
+     * {@link RequestConfig} 用于配置{@link HttpClient}
+     * <p>
+     *     定义的缺省设置:
+     *     <li>ConnectionRequestTimeout: 1000ms, 设置从connect Manager获取Connection 超时时间，单位毫秒(针对有连接池的客户端)
+     *     <li>ConnectTimeout: 3000ms, 设置连接超时时间, 单位ms.
+     *     <li>SocketTimeout: 3000ms, 请求获取数据的超时时间, 单位ms, 如果访问一个接口，多少时间内无法返回数据，就直接放弃此次调用
+     * </p>
+     * <p>
+     *     使用{@link JfHttpClient#setRequestConfig(org.apache.http.client.config.RequestConfig)}可自定义配置.
+     * </p>
+     * <p>
+     *     使用HttpClient，一般都需要设置连接超时时间和获取数据超时时间。
+     *     这两个参数很重要，目的是为了防止访问其他http时，由于超时导致自己的应用受影响。
+     * </p>
+     */
+    protected volatile RequestConfig requestConfig = RequestConfig.custom()
+            // 设置从connect Manager获取Connection 超时时间，单位毫秒(针对有连接池的客户端)
+            .setConnectionRequestTimeout(1000)
+            // 设置连接超时时间, 单位ms
+            .setConnectTimeout(3000)
+            // 请求获取数据的超时时间, 单位ms, 如果访问一个接口，多少时间内无法返回数据，就直接放弃此次调用。
+            .setSocketTimeout(3000)
+            .build();
+
+    /**
      * 调出config实例, 进行参数配置.
      *
      * @return
      */
     public Config config() {
         return config;
+    }
+
+    public RequestConfig getRequestConfig() {
+        return requestConfig;
+    }
+
+    /**自定义{@link RequestConfig}
+     * <p>
+     *     RequestConfig构建示例:
+     *     <pre>
+     *         RequestConfig.custom()
+     *             // 设置从connect Manager获取Connection 超时时间，单位毫秒(针对有连接池的客户端)
+     *             .setConnectionRequestTimeout(1000)
+     *             // 设置连接超时时间, 单位ms
+     *             .setConnectTimeout(3000)
+     *             // 请求获取数据的超时时间, 单位ms, 如果访问一个接口，多少时间内无法返回数据，就直接放弃此次调用。
+     *             .setSocketTimeout(3000)
+     *             .build();
+     *     </pre>
+     * </p>
+     * @param requestConfig
+     */
+    public void setRequestConfig(RequestConfig requestConfig) {
+        this.requestConfig = requestConfig;
     }
 
 
@@ -98,6 +149,9 @@ public class JfHttpClient {
         Map<String, Object> params = prepareParams((T) data).toMap();
 
         HttpGet request = new HttpGet(buildUrl(url, params));
+        // 设置RequestConfig
+        request.setConfig(requestConfig);
+
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
                 request.addHeader(e.getKey(), e.getValue());
@@ -134,6 +188,9 @@ public class JfHttpClient {
         Map<String, Object> params = prepareParams((T) data).toMap();
 
         HttpPost request = new HttpPost(buildUrl(url, null));
+        // 设置RequestConfig
+        request.setConfig(requestConfig);
+
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
                 request.addHeader(e.getKey(), e.getValue());
@@ -178,6 +235,9 @@ public class JfHttpClient {
 
 
         HttpPost request = new HttpPost(buildUrl(url, null));
+        // 设置RequestConfig
+        request.setConfig(requestConfig);
+
 
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
@@ -204,163 +264,7 @@ public class JfHttpClient {
         return executeMethod(httpClient, request);
     }
 
-//    /**
-//     * Post stream
-//     *
-//     * @param host
-//     * @param path
-//     * @param headers
-//     * @param querys
-//     * @param body
-//     * @return
-//     * @throws Exception
-//     */
-//    public HttpResponse doPost(String host, String path,
-//                               Map<String, String> headers,
-//                               Map<String, String> querys,
-//                               byte[] body)
-//            throws Exception {
-//        HttpClient httpClient = wrapClient(host);
-//
-//        HttpPost request = new HttpPost(buildUrl(host, path, querys));
-//        for (Map.Entry<String, String> e : headers.entrySet()) {
-//            request.addHeader(e.getKey(), e.getValue());
-//        }
-//
-//        if (body != null) {
-//            request.setEntity(new ByteArrayEntity(body));
-//        }
-//
-//        return httpClient.execute(request);
-//    }
-//
-//    /**
-//     * Put json
-//     * <p>
-//     * 类似doPost(post json)
-//     * </p>
-//     *
-//     * @param host
-//     * @param path
-//     * @param headers
-//     * @param querys
-//     * @param body
-//     * @return
-//     * @throws Exception
-//     */
-//    public HttpResponse doPut(String host, String path,
-//                              Map<String, String> headers,
-//                              Map<String, String> querys,
-//                              String body)
-//            throws Exception {
-//        HttpClient httpClient = wrapClient(host);
-//
-//        HttpPut request = new HttpPut(buildUrl(host, path, querys));
-//        if (headers != null) {
-//            for (Map.Entry<String, String> e : headers.entrySet()) {
-//                request.addHeader(e.getKey(), e.getValue());
-//            }
-//        }
-//
-//        //追加默认header
-//        //若没有指定Content-Type, 则"Content type" 默认为'text/plain;charset=UTF-8'
-//        //若没有手动指定, 这里就追加设置为常用application/json
-//        if (headers == null || headers.get(CONTENT_TYPE) == null) {
-//            request.addHeader(CONTENT_TYPE, "application/json; charset=UTF-8");
-//        }
-//
-//        if (StringUtils.isNotBlank(body)) {
-//            request.setEntity(new StringEntity(body, "utf-8"));
-//        }
-//
-//        return httpClient.execute(request);
-//    }
-//
-//    /**
-//     * Put stream
-//     *
-//     * @param host
-//     * @param path
-//     * @param method
-//     * @param headers
-//     * @param querys
-//     * @param body
-//     * @return
-//     * @throws Exception
-//     */
-//    public HttpResponse doPut(String host, String path, String method,
-//                              Map<String, String> headers,
-//                              Map<String, String> querys,
-//                              byte[] body)
-//            throws Exception {
-//        HttpClient httpClient = wrapClient(host);
-//
-//        HttpPut request = new HttpPut(buildUrl(host, path, querys));
-//        for (Map.Entry<String, String> e : headers.entrySet()) {
-//            request.addHeader(e.getKey(), e.getValue());
-//        }
-//
-//        if (body != null) {
-//            request.setEntity(new ByteArrayEntity(body));
-//        }
-//
-//        return httpClient.execute(request);
-//    }
-//
-//    /**
-//     * Delete
-//     *
-//     * @param host
-//     * @param path
-//     * @param method
-//     * @param headers
-//     * @param querys
-//     * @return
-//     * @throws Exception
-//     */
-//    public HttpResponse doDelete(String host, String path, String method,
-//                                 Map<String, String> headers,
-//                                 Map<String, String> querys)
-//            throws Exception {
-//        HttpClient httpClient = wrapClient(host);
-//
-//        HttpDelete request = new HttpDelete(buildUrl(host, path, querys));
-//        for (Map.Entry<String, String> e : headers.entrySet()) {
-//            request.addHeader(e.getKey(), e.getValue());
-//        }
-//
-//        return httpClient.execute(request);
-//    }
 
-//
-//    public static void main(String[] args) {
-//        String url = "127.0.0.1:8080";
-//        try {
-//            JSONObject jsonObjectSend = new JSONObject();
-//            JSONObject bodyJsonObject = new JSONObject();
-//            JSONArray jsonArray = new JSONArray();
-//            HttpClient httpClient = new DefaultHttpClient();
-//            HttpPost method = new HttpPost(url);
-//            String[] devices = {"123", "234"};
-//            bodyJsonObject.put("message", "test");
-//            bodyJsonObject.put("devices", devices);
-//            jsonArray.put(0, bodyJsonObject);
-//            jsonObjectSend.put("body", jsonArray);
-//            String sendstr = jsonObjectSend.toString();
-//            method.addHeader("Content-type", "application/json; charset=utf-8");
-//            method.setEntity(new StringEntity(sendstr, Charset.forName("UTF-8")));
-//            httpClient.execute(method);
-//            return;
-//        } catch (Exception e) {
-//            System.out.println("error....");
-//            System.out.println(e.toString());
-//            System.out.println("--------------------");
-//            System.out.println(e.getMessage());
-//            System.out.println("--------------------");
-//            e.printStackTrace();
-//            return;
-//        }
-//    }
 
 
     /**
@@ -637,6 +541,7 @@ public class JfHttpClient {
      */
     public HttpClient getHttpClient() {
         return new DefaultHttpClient();
+//        return HttpClients.createDefault();
     }
 
     protected void sslClient(HttpClient httpClient) {

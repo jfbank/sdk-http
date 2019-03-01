@@ -20,7 +20,7 @@ public class JfClientManager {
 
     /**
      * Jf http client的全局配置, 所有client的缺省项都会<b>复制</b>这里的参数.
-     * 修改配置是线程安全的.
+     *
      */
     protected volatile Config config = new Config();
 
