@@ -1,7 +1,10 @@
 package com.jfai.afs.http.utils;
 
 import com.jfai.afs.http.bean.HttpVo;
+import com.jfai.afs.http.bean.JfReqParam;
+import com.jfai.afs.http.bean.JfResBody;
 import com.jfai.afs.http.constant.HttpConst;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,7 +304,7 @@ public class JfCipher {
      * @param appSecret 可NULL
      * @return
      */
-    private static String buildSignSource(Map<String, Object> vo, String appSecret) {
+    public static String buildSignSource(Map<String, Object> vo, String appSecret) {
         // 构建TreeMap, 方便按key的字典顺序遍历 --> 改为遍历构建, 防止key有null
         // TreeMap<String, Object> signMap = new TreeMap<>(vo);
         TreeMap<String, Object> signMap = new TreeMap<>();
@@ -354,4 +357,147 @@ public class JfCipher {
     }
 
 
+    /**
+     * <p>
+     *     签名规则改变: 仅用appKey+appSecret+timestamp制作签名.
+     * </p>
+     * @param vo
+     * @param peerPubkey
+     * @param doZip
+     * @return sessionKey
+     * @throws InvalidKeySpecException
+     * @throws InvalidKeyException
+     * @since 2.1.0
+     */
+    public static String encrypt(HttpVo vo, String peerPubkey, boolean doZip) throws InvalidKeySpecException, InvalidKeyException {
+        long tt0 = System.currentTimeMillis();
+        assert vo != null : "`vo` (to be encrypted data must be not null)";
+        //获得随机的AES密钥(sessionKey)
+        long t0 = System.currentTimeMillis();
+        String sessionKey = AES.genAesKey();
+        long t1 = System.currentTimeMillis();
+        log.debug("Generate AES key: {}, cost {}ms", sessionKey, t1 - t0);
+
+        //对data字段用AES密钥(sessionKey)加密
+        String data = vo.getData(); // 取出来就是json字符
+
+        byte[] bitData;
+
+        if (data != null) {
+            // 是否压缩
+            if (doZip) {
+                long gz0 = System.currentTimeMillis();
+                bitData = GzipUtils.gzip(data);
+                long gz1 = System.currentTimeMillis();
+                log.debug("gzip cost: {}ms, source size: {}KB, after gzip: {}KB, compression ratio: {}",
+                        gz1 - gz0, data.getBytes().length / 1024.0, bitData.length / 1024.0, data.getBytes().length / (bitData.length + 0.0));
+                // 设置压缩标记
+                //vo.put(HttpConst.ZIP, true);
+                vo.setZip(true);
+            } else {
+                bitData = data.getBytes(UTF8);
+            }
+
+            // 加密
+            long t2 = System.currentTimeMillis();
+            String enData = AES.encrypt(bitData, sessionKey);
+            long t3 = System.currentTimeMillis();
+            log.debug("AES encrypt data({} chars), cost {}ms", data.length(), t3 - t2);
+            //vo.put(HttpConst.DATA, enData);
+            vo.setData(enData);
+        } else {
+            log.debug("`data` is null, no need for encrypting");
+        }
+
+        //对AES密钥(sessionKey)用对方的RSA公钥加密
+        long t4 = System.currentTimeMillis();
+        String enSsk = RSA.encrypt(sessionKey, peerPubkey);      //NoSuchPaddingException
+        long t5 = System.currentTimeMillis();
+        log.debug("RSA encrypt sessionKey({} chars), cost {}ms", sessionKey.length(), t5 - t4);
+        //vo.put(HttpConst.SESSION_KEY, enSsk);
+        vo.setSessionKey(enSsk);
+
+        // 加密后, 要加上 加密标记 encryption=true
+        //vo.put(HttpConst.ENCRYPTION, true);
+        vo.setEncryption(true);
+
+        // 签名规则改变
+
+
+        long tt1 = System.currentTimeMillis();
+        log.debug("encrypt cost: {}ms", tt1 - tt0);
+
+        return sessionKey;
+    }
+
+
+
+    /**
+     * 用于对接收的数据报解密
+     * <p>
+     *  用AES密钥对 data 字段解密
+     * </p>
+     *
+     * @param vo
+     */
+    public static <T> void decrypt2(HttpVo vo, String aesKey, boolean doUnzip) throws IOException {
+        assert vo != null : "`vo` mustn't be null";
+        assert aesKey != null && !"".equals(aesKey) : "`aesKey` mustn't be empty";
+
+        String data = vo.getData();
+        //data 字段不为null时才需要解密
+        if (data != null) {
+//            // 进入解密时, data 的值必须是String
+//            String data = String.valueOf(dataObj);
+            long t2 = System.currentTimeMillis();
+            String deData = null;
+            byte[] unzipDeData = null;
+            if (!doUnzip) {
+                deData = AES.decrypt(data, aesKey);
+                long t3 = System.currentTimeMillis();
+                log.debug("AES decrypt data({} chars), cost {}ms", data.length(), t3 - t2);
+                //log.trace("decrypted `data`:{}", deData);
+            } else {
+                unzipDeData = AES.decryptToBytes(data, aesKey);
+                long tt3 = System.currentTimeMillis();
+                log.debug("AES decrypt data({} KB), cost {}ms", unzipDeData.length / 1024.0, tt3 - t2);
+            }
+
+
+            //解密完了后, 是否要解压缩
+            if (doUnzip) {
+                long g0 = System.currentTimeMillis();
+                deData = new String(GzipUtils.ungzipBytes(unzipDeData), UTF8);
+                long g1 = System.currentTimeMillis();
+                log.debug("ungzip cost:{}ms, {} KB", g1 - g0, deData.getBytes().length / 1024.0);
+            }
+
+            // 将解密后的明文替换掉密文
+            vo.setData(deData);
+        } else {
+            log.info("`data` is null, need not to decrypt");
+        }
+    }
+
+    /**签名: 所有字段字典顺序正序, 取sha1
+     * @param vo
+     * @param appSecret 需要带上, 否则签名容易被仿制.
+     */
+    public static void sign(HttpVo vo, String appSecret) {
+        String signSource = buildSignSource(vo.toMap(), appSecret);
+        String sign = null;
+        sign = DigestUtils.sha1Hex(signSource);
+        vo.setSign(sign);
+    }
+
+    public static boolean checkSign(HttpVo vo, String appSecret) {
+        // 制作签名和请求的签名对比, 一样==>数据未被篡改
+        String ss = buildSignSource(vo.toMap(), appSecret);
+        String buildedSign = DigestUtils.sha1Hex(ss);
+        if (buildedSign.equals(vo.getSign())) {
+            return true;
+        }else{
+            return false;
+        }
+    }
 }

@@ -16,26 +16,61 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class JfClientManagerTest {
-    private static final  String clientPubkey = "-----BEGIN PUBLIC KEY-----\n"+
-            "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDGsx_3zcCH6li-8zs8CqnEtYaiLjX-VgiFx7tbDldIdJ4rW4OW9Vv6L9MxrjY-O_J8pbz2CmNsPIsw7ey8FyOLFX0-kXunaSaLU1gDTUE9W1N8PViuDFIcTonv_ui0tomg8Vg_hca6bE_1GuDxFS3k50X8DNeIrpsVRuQ5u7oz4wIDAQAB\n"+
+    private static final String clientPubkey = "-----BEGIN PUBLIC KEY-----\n" +
+            "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDGsx_3zcCH6li-8zs8CqnEtYaiLjX-VgiFx7tbDldIdJ4rW4OW9Vv6L9MxrjY-O_J8pbz2CmNsPIsw7ey8FyOLFX0-kXunaSaLU1gDTUE9W1N8PViuDFIcTonv_ui0tomg8Vg_hca6bE_1GuDxFS3k50X8DNeIrpsVRuQ5u7oz4wIDAQAB\n" +
             "-----END PUBLIC KEY-----";
     private static final String clientPrvkey = "-----BEGIN PRIVATE KEY-----\n" +
             "MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAMazH_fNwIfqWL7zOzwKqcS1hqIuNf5WCIXHu1sOV0h0nitbg5b1W_ov0zGuNj478nylvPYKY2w8izDt7LwXI4sVfT6Re6dpJotTWANNQT1bU3w9WK4MUhxOie_-6LS2iaDxWD-FxrpsT_Ua4PEVLeTnRfwM14iumxVG5Dm7ujPjAgMBAAECgYBfOAvDxrfS6jypFQp31WxRtePU6Gw7e6MN6Q8hrZeqQyhhArPmraHsHOsKTb_0xumHTi1lgsjuX30cb4gZAsWm0rCNsraEFO6OfBYPHrA3Z5EtW1i3KYgzHAYJiSiArA1kU5ueu29li-WQb88Z5CJoD8rp0lN0OaUowIwS5rI60QJBAO0aFclzKph4Q5YiW5isYG0lEMxMMEXkg1atoajHy-sX06cdZEYr0N0OGRzKnQwCwyzgz9P42ASvl7L4tZRjyKcCQQDWiXegdwd1BbMaV44BohE_TGSGZ5YQYcoJiiDLIdLc-CYQ3IbXWU13wZJCykuY5_74JD4YlI6-zv2F7PSR-uZlAkBo2wtdjr_8s9r373PgngL64dR-9Qa4MinfUGRY1xsYee4RTs9EtSXmTNDQSc6QPDyCgV2H2dn2oI0PCiyLVmGrAkBe3rlk314P1K5oBrHIbRe9axXFDcehhOzoHQn1agaqKp4CtNJ4JoiIXbRFDtoxSt5IcxZ2njMlk7ku4SMh7ta1AkEAoh-GjGNFVm_-I8uZbZrc60M-m5UFDVSjQrxKULtpVRyYjwAvJaNPmMHZB_b5DdaLr0UdExd_CNYRWjiLWmF8JQ\n" +
             "-----END PRIVATE KEY-----";
     private static final String serverPubkey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyxQxnDmbP/FqGd4yf+fGmHINts1uA57H/uYibfvaJaoP2RxA0aLGSp3jZbsu4Ri5YD1msLY+sM4za9qzOs91aEsvEY8+7ABBVcJjfPhAZ71+qXQGPXGRIxY4rkrndW9Jvyw9DBg8W5CPvLVxeid2yVUdzkIP301CCCTcyCMzQcwIDAQAB";
 
+
     @Test
-    public void fun2(){
+    public void fun5() {
+
+        // 构建玖富客户端管理者实例
+        JfClientManager m = new JfClientManager();
+        // 调用config()方法设置配置项, 全局配置, 只要通过这个管理者获取的客户端都会自动继承这里的配置项
+        m.config()
+                .setServerPubkey(serverPubkey)  // 玖富的公钥
+                // 默认的请求URL, 有了这项配置, 以后只要是相同URL的客户端, 可以只用传入相对路径
+                .setDefaultHost("http://afs.9fbank.com")
+                // 事先申请的 appKey 和 appSecret
+                .setAppKey("AK531894660444999680")
+                .setAppSecret("b289cd954ae02d176d2b0c8f6d2f4c89");
+        JfHttpClient c = m.getJfHttpClientEnc();
+
+        // 准备接口级参数
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("name", "李白");
+        data.put("type", "刺客");
+
+
+        JfResponse response = null;
+        try {
+            response = c.doGet("http://localhost:18081/api/test/encryption", null, data);
+            System.out.println(response.getBody().toString(true));
+        } catch (Exception e) {
+            System.out.println("异常咯...");
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    @Test
+    public void fun2() {
         RSA.validateRsaKeyPair(clientPubkey, clientPrvkey);
     }
 
     @Test
-    public void fun4(){
+    public void fun4() {
         // post form
         JfClientManager m = buildJfClientManager();
         JfHttpClient c = m.getJfHttpClientEnc();
         try {
-            JfResponse res = c.doPostForm("test/form",null, "下载的数据");
+            JfResponse res = c.doPostForm("test/form", null, "下载的数据");
             if (res.is2xx()) {
                 System.out.println(res.getBody());
             }
@@ -45,7 +80,7 @@ public class JfClientManagerTest {
     }
 
     @Test
-    public void fun3(){
+    public void fun3() {
         // 只压缩, 不加密
         JfClientManager m = buildJfClientManager();
 
@@ -56,13 +91,13 @@ public class JfClientManagerTest {
             JfResponse res = c.doGet("test/encryption", null, "请求data");
             if (res.is2xx()) {
                 JfResBody body = (JfResBody) res.getBody();
-                if (body.getCode()==0) {
+                if (body.getCode() == 0) {
                     System.out.println("请求成功");
-                }else{
+                } else {
                     System.out.println("请求失败");
                 }
                 System.out.println(body.toString(true));
-            }else{
+            } else {
                 System.out.println(res);
             }
 
@@ -74,7 +109,7 @@ public class JfClientManagerTest {
     }
 
     @Test
-    public void 演示加密压缩请求(){
+    public void 演示加密压缩请求() {
 
         // 构建客户端管理者实例
         JfClientManager m = buildJfClientManager();
@@ -87,6 +122,7 @@ public class JfClientManagerTest {
 
         //client.setRequestConfig(RequestConfig.DEFAULT); //默认的不限时间
         // 用玖富定义的默认配置, 超过3s没有返回抛 java.net.SocketTimeoutException: Read timed out
+        // org.apache.http.conn.ConnectTimeoutException: Connect to www.google.com.hk:80 [www.google.com.hk/67.15.129.210] failed: connect timed out
 
         // 准备接口级参数
         HashMap<String, Object> data = new HashMap<>();
@@ -97,12 +133,13 @@ public class JfClientManagerTest {
             // url: 由于管理者配置了默认url, 这里使用接口的path即可(开头有无/无关紧要)
             // headers: 请求头, 默认配有Content-Type:application/json;charset=utf-8, 没有其它头, 可null
             // data: 接口级参数, 原样传入即可, 内部都会转成json串, 然后选择是否加密或者压缩.
-            JfResponse res = client.doGet("http://localhost:18081/api/test/encryption", null, data);
+//            JfResponse res = client.doGet("http://localhost:18081/api/test/encryption", null, data);
+            JfResponse res = client.doGet("http://www.google.com.hk", null, data);
             // 请求是否成功响应
             if (res.is2xx()) {
                 // 拿出响应体
                 JfResBody body = res.getBody();
-                if (body.getCode()==0) {
+                if (body.getCode() == 0) {
                     System.out.println("请求成功");
                     // 处理响应的业务数据
                     // 方式1: 获取data字段的原始内容, json串或普通字符串, 随具体的接口决定
@@ -113,12 +150,12 @@ public class JfClientManagerTest {
                     //Map<String, Object> data2 = body.getData(new TypeReference<Map<String, Object>>() {});
 
                     System.out.println(data0);
-                }else{
+                } else {
                     System.out.println("请求失败");
                 }
                 // 以格式化的方式展示响应体
                 System.out.println(body.toString(true));
-            }else{
+            } else {
                 System.out.println(res);
             }
 
@@ -137,8 +174,8 @@ public class JfClientManagerTest {
         JfClientManager m = new JfClientManager();
         // 调用config()方法设置配置项, 全局配置, 只要通过这个管理者获取的客户端都会自动继承这里的配置项
         m.config()
-                .setClientPubkey(clientPubkey)  // 调用者的公钥
-                .setClientPrvkey(clientPrvkey)  // 调用者的私钥
+//                .setClientPubkey(clientPubkey)  // 调用者的公钥
+//                .setClientPrvkey(clientPrvkey)  // 调用者的私钥
                 .setServerPubkey(serverPubkey)  // 玖富的公钥
                 // 默认的请求URL, 有了这项配置, 以后只要是相同URL的客户端, 可以只用传入相对路径
                 .setDefaultHost("http://afs.9fbank.com")
@@ -184,8 +221,8 @@ public class JfClientManagerTest {
                 .setAppSecret("AS")
                 .setDefaultHost("http://localhost")
                 .setServerPubkey("server pubkey")
-                .setClientPubkey("client pubkey")
-                .setClientPrvkey("client privkey");
+//                .setClientPubkey("client pubkey")
+//                .setClientPrvkey("client privkey");
         JfHttpClient c = jfClientManager.getJfHttpClient();
 
         System.out.println(c);
@@ -201,7 +238,7 @@ public class JfClientManagerTest {
     @Test
     public void getJfHttpClientEnc() {
         String src = "Hi~ 我是测试客户端RSA密钥对是否有效的原文^~^";
-        System.out.println("test source: "+src);
+        System.out.println("test source: " + src);
         String enc = null;
         try {
             enc = RSA.encrypt(src, clientPubkey);
@@ -209,14 +246,14 @@ public class JfClientManagerTest {
             e.printStackTrace();
         }
 
-        System.out.println("test rsa encrypt: "+enc);
+        System.out.println("test rsa encrypt: " + enc);
         String dec = null;
         try {
             dec = RSA.decrypt(enc, clientPrvkey);
         } catch (InvalidKeySpecException | InvalidKeyException e) {
             e.printStackTrace();
         }
-        System.out.println("test rsa decrypt: "+ dec);
+        System.out.println("test rsa decrypt: " + dec);
 
         System.out.println("------");
         String sign = null;

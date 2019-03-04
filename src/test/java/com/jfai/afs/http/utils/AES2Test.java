@@ -18,6 +18,14 @@ public class AES2Test {
     public static final String KEY = "x4hnmkJR4Q9ZJxbf";
 
     @Test
+    public void fun3(){
+        String enc = AES.encrypt("哈喽", KEY);
+        System.out.println(enc);
+        String dec = AES.decrypt("bM0azjjsmXf4TSFi6y0W0gbM0azjjsmXf4TSFi6y0W0g", KEY);
+        System.out.println(dec);
+    }
+
+    @Test
     public void fun2(){
         String dec = AES.decrypt("zcHM23_gzBwYtiS3m7mI3MsYwK8TudLRGL6xXfZXG-XuMhGd1NAH8huJbxSm-KlQ6iCwcxVy7NPQ1a_2NO5fCSulhes6hf2oN5tsjURAPr7X7PzedcUzzc3vSavGMaFhEbVUv1Fg7o9_syORgANH3rLGOoLCPyxONMa28v2Xzh_WJHduHUaKy6NV-n75FezWlzqfjdgywER6zgJw2teDqQ-tByY2PnTMO8vUEj2CVUXfBaVlwCuf9jZmJlvs6i-n98y4B3_izqQRt_kbc4KvLWLJz8tl-d3BqNzW4KUV2pTi78FpDBOUL3FQ2PE6B4Y-bSIjWAg6BxRPIdo0IrH3o45rUrfouyMxbKKCKpw_Gok6GZIKd4j3duj9L_JlxQ-d",
                 "yg4CvHxmr5RGdhTU");

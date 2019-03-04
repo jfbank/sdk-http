@@ -20,14 +20,14 @@ public class Config {
      * 服务端公钥, 即玖富的公钥, 用于加密请求数据.
      */
     private String serverPubkey;
-    /**
-     * 客户端公钥, 即接口接入方公钥, 用于验签响应数据.
-     */
-    private String clientPubkey;
-    /**
-     * 客户端私钥, 即接入方的私钥, 用于加密请求数据.
-     */
-    private String clientPrvkey;
+//    /**
+//     * 客户端公钥, 即接口接入方公钥, 用于验签响应数据.
+//     */
+//    private String clientPubkey;
+//    /**
+//     * 客户端私钥, 即接入方的私钥, 用于加密请求数据.
+//     */
+//    private String clientPrvkey;
     /**
      * 和appKey时一对, 用于签名时加盐. !相当于密码, 不可外泄!.
      */
@@ -67,24 +67,6 @@ public class Config {
 
     public Config setServerPubkey(String serverPubkey) {
         this.serverPubkey = serverPubkey;
-        return this;
-    }
-
-    public String getClientPubkey() {
-        return clientPubkey;
-    }
-
-    public Config setClientPubkey(String clientPubkey) {
-        this.clientPubkey = clientPubkey;
-        return this;
-    }
-
-    public String getClientPrvkey() {
-        return clientPrvkey;
-    }
-
-    public Config setClientPrvkey(String clientPrvkey) {
-        this.clientPrvkey = clientPrvkey;
         return this;
     }
 
@@ -134,8 +116,6 @@ public class Config {
         if (other != null) {
             if (appKey == null) appKey = other.getAppKey();
             if (serverPubkey == null) serverPubkey = other.getServerPubkey();
-            if (clientPubkey == null) clientPubkey = other.getClientPubkey();
-            if (clientPrvkey == null) clientPrvkey = other.getClientPrvkey();
             if (appSecret == null) appSecret = other.getAppSecret();
             if (defaultHost == null) defaultHost = other.getDefaultHost();
             if (encryption == false) encryption = other.getEncryption();

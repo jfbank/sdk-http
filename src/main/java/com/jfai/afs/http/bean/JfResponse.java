@@ -49,7 +49,7 @@ public class JfResponse {
     public JfResponse() {
     }
 
-    public JfResponse(int statusCode, JfResBody body) {
+    public JfResponse(Integer statusCode, JfResBody body) {
         this.statusCode = statusCode;
         this.body = body;
     }
