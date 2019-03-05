@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class AES {
 
-    public static final String AES = "AES";
+    private static final String AES = "AES";
     private static final Charset UTF8 = Charset.forName("UTF-8");
 
     /**
@@ -42,10 +42,10 @@ public class AES {
      * <p>PKCS5Padding 和 JS框架中的 PKCS7 兼容. 有些js框架没有 NoPadding 类型. 所以, 这里的模式, 根据前台框架灵活选择.</p>
      */
 //    public static final String ALG_MODE_PAD = "AES/CBC/NoPadding";
-    public static final String ALG_MODE_PAD = "AES/CBC/PKCS5Padding";
+    private static final String ALG_MODE_PAD = "AES/CBC/PKCS5Padding";
 //    public static final String ALG_MODE_PAD = "AES/ECB/PKCS5Padding";
-    public static final int KEY_LEN = 16;
-    public static final String[] STR_POOL = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM".split("");
+    private static final int KEY_LEN = 16;
+    private static final String[] STR_POOL = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM".split("");
 
     /**
      * @param plntxt 待加密的明文

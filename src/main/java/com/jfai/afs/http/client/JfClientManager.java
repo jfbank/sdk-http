@@ -20,7 +20,7 @@ public class JfClientManager {
 
     /**
      * Jf http client的全局配置, 所有client的缺省项都会<b>复制</b>这里的参数.
-     * 修改配置是线程安全的.
+     *
      */
     protected volatile Config config = new Config();
 
@@ -122,38 +122,6 @@ public class JfClientManager {
         return client;
     }
 
-    /**
-     * 若配置需要加密请求数据, 则必须要有对应密钥配置项.
-     *
-     * @return
-     */
-    public boolean validateConf(Config config) {
-        log.trace("validateConf: {}", config);
-        if (config.getEncryption()) {
-//            if (StringUtils.isBlank(config.getAppSecret())) {
-//                throw new JfConfigException("lack of 'appSecret' config");
-//            }
-
-            if (StringUtils.isBlank(config.getServerPubkey())) {
-                throw new JfConfigException("lack of 'serverPubkey' config");
-            }
-
-            if (StringUtils.isBlank(config.getClientPubkey())) {
-                throw new JfConfigException("lack of 'clientPubkey' config");
-            }
-
-            if (StringUtils.isBlank(config.getClientPrvkey())) {
-                throw new JfConfigException("lack of 'clientPrvkey' config");
-            }
-
-            // 进一步校验 客户端密钥对是否有效
-            if (log.isTraceEnabled()) {
-                validateClientKey(config.getClientPubkey(), config.getClientPrvkey());
-            }
-        }
-
-        return true;
-    }
 
     private void validateClientKey(String clientPubkey, String clientPrvkey) {
         RSA.validateRsaKeyPair(clientPubkey, clientPrvkey);

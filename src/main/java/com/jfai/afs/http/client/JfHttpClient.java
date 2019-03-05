@@ -12,11 +12,13 @@ import com.jfai.afs.http.exception.JfConfigException;
 import com.jfai.afs.http.exception.JfSecurityException;
 import com.jfai.afs.http.utils.GzipUtils;
 import com.jfai.afs.http.utils.JfCipher;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
 import org.apache.http.conn.ClientConnectionManager;
@@ -27,6 +29,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +43,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,12 +70,61 @@ public class JfHttpClient {
     protected volatile Config config = new Config();
 
     /**
+     * {@link RequestConfig} 用于配置{@link HttpClient}
+     * <p>
+     *     定义的缺省设置:
+     *     <li>ConnectionRequestTimeout: 1000ms, 设置从connect Manager获取Connection 超时时间，单位毫秒(针对有连接池的客户端)
+     *     <li>ConnectTimeout: 3000ms, 设置连接超时时间, 单位ms.
+     *     <li>SocketTimeout: 3000ms, 请求获取数据的超时时间, 单位ms, 如果访问一个接口，多少时间内无法返回数据，就直接放弃此次调用
+     * </p>
+     * <p>
+     *     使用{@link JfHttpClient#setRequestConfig(org.apache.http.client.config.RequestConfig)}可自定义配置.
+     * </p>
+     * <p>
+     *     使用HttpClient，一般都需要设置连接超时时间和获取数据超时时间。
+     *     这两个参数很重要，目的是为了防止访问其他http时，由于超时导致自己的应用受影响。
+     * </p>
+     */
+    protected volatile RequestConfig requestConfig = RequestConfig.custom()
+            // 设置从connect Manager获取Connection 超时时间，单位毫秒(针对有连接池的客户端)
+            .setConnectionRequestTimeout(1000)
+            // 设置连接超时时间, 单位ms
+            .setConnectTimeout(3000)
+            // 请求获取数据的超时时间, 单位ms, 如果访问一个接口，多少时间内无法返回数据，就直接放弃此次调用。
+            .setSocketTimeout(3000)
+            .build();
+
+    /**
      * 调出config实例, 进行参数配置.
      *
      * @return
      */
     public Config config() {
         return config;
+    }
+
+    public RequestConfig getRequestConfig() {
+        return requestConfig;
+    }
+
+    /**自定义{@link RequestConfig}
+     * <p>
+     *     RequestConfig构建示例:
+     *     <pre>
+     *         RequestConfig.custom()
+     *             // 设置从connect Manager获取Connection 超时时间，单位毫秒(针对有连接池的客户端)
+     *             .setConnectionRequestTimeout(1000)
+     *             // 设置连接超时时间, 单位ms
+     *             .setConnectTimeout(3000)
+     *             // 请求获取数据的超时时间, 单位ms, 如果访问一个接口，多少时间内无法返回数据，就直接放弃此次调用。
+     *             .setSocketTimeout(3000)
+     *             .build();
+     *     </pre>
+     * </p>
+     * @param requestConfig
+     */
+    public void setRequestConfig(RequestConfig requestConfig) {
+        this.requestConfig = requestConfig;
     }
 
 
@@ -94,10 +147,16 @@ public class JfHttpClient {
     public <T> JfResponse doGet(String url, Map<String, String> headers, T data) throws Exception {
         HttpClient httpClient = wrapClient(url);
 
+        //
+        RequestMeta requestMeta = new RequestMeta();
+
         // 准备请求参数
-        Map<String, Object> params = prepareParams((T) data).toMap();
+        Map<String, Object> params = prepareParams((T) data, requestMeta).toMap();
 
         HttpGet request = new HttpGet(buildUrl(url, params));
+        // 设置RequestConfig
+        request.setConfig(requestConfig);
+
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
                 request.addHeader(e.getKey(), e.getValue());
@@ -110,7 +169,7 @@ public class JfHttpClient {
             request.addHeader(CONTENT_TYPE, "application/json; charset=UTF-8");
         }
 
-        return executeMethod(httpClient, request);
+        return executeMethod(httpClient, request, requestMeta);
     }
 
 
@@ -130,10 +189,16 @@ public class JfHttpClient {
     @Contract("_->!null")
     public <T> JfResponse doPostForm(String url, Map<String, String> headers, T data) throws Exception {
         HttpClient httpClient = wrapClient(url);
+
+        RequestMeta requestMeta = new RequestMeta();
+
         // 准备请求参数
-        Map<String, Object> params = prepareParams((T) data).toMap();
+        Map<String, Object> params = prepareParams((T) data, requestMeta).toMap();
 
         HttpPost request = new HttpPost(buildUrl(url, null));
+        // 设置RequestConfig
+        request.setConfig(requestConfig);
+
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
                 request.addHeader(e.getKey(), e.getValue());
@@ -154,7 +219,7 @@ public class JfHttpClient {
         }
 
         //return httpClient.execute(request);
-        return executeMethod(httpClient, request);
+        return executeMethod(httpClient, request, requestMeta);
 
     }
 
@@ -174,10 +239,15 @@ public class JfHttpClient {
     @Contract("_->!null")
     public <T> JfResponse doPost(String url, Map<String, String> headers, T data) throws Exception {
         HttpClient httpClient = wrapClient(url);
-        Map<String, Object> params = prepareParams(data).toMap();
+        RequestMeta requestMeta = new RequestMeta();
+
+        Map<String, Object> params = prepareParams(data, requestMeta).toMap();
 
 
         HttpPost request = new HttpPost(buildUrl(url, null));
+        // 设置RequestConfig
+        request.setConfig(requestConfig);
+
 
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
@@ -201,166 +271,10 @@ public class JfHttpClient {
         }
 
         //return httpClient.execute(request);
-        return executeMethod(httpClient, request);
+        return executeMethod(httpClient, request, requestMeta);
     }
 
-//    /**
-//     * Post stream
-//     *
-//     * @param host
-//     * @param path
-//     * @param headers
-//     * @param querys
-//     * @param body
-//     * @return
-//     * @throws Exception
-//     */
-//    public HttpResponse doPost(String host, String path,
-//                               Map<String, String> headers,
-//                               Map<String, String> querys,
-//                               byte[] body)
-//            throws Exception {
-//        HttpClient httpClient = wrapClient(host);
-//
-//        HttpPost request = new HttpPost(buildUrl(host, path, querys));
-//        for (Map.Entry<String, String> e : headers.entrySet()) {
-//            request.addHeader(e.getKey(), e.getValue());
-//        }
-//
-//        if (body != null) {
-//            request.setEntity(new ByteArrayEntity(body));
-//        }
-//
-//        return httpClient.execute(request);
-//    }
-//
-//    /**
-//     * Put json
-//     * <p>
-//     * 类似doPost(post json)
-//     * </p>
-//     *
-//     * @param host
-//     * @param path
-//     * @param headers
-//     * @param querys
-//     * @param body
-//     * @return
-//     * @throws Exception
-//     */
-//    public HttpResponse doPut(String host, String path,
-//                              Map<String, String> headers,
-//                              Map<String, String> querys,
-//                              String body)
-//            throws Exception {
-//        HttpClient httpClient = wrapClient(host);
-//
-//        HttpPut request = new HttpPut(buildUrl(host, path, querys));
-//        if (headers != null) {
-//            for (Map.Entry<String, String> e : headers.entrySet()) {
-//                request.addHeader(e.getKey(), e.getValue());
-//            }
-//        }
-//
-//        //追加默认header
-//        //若没有指定Content-Type, 则"Content type" 默认为'text/plain;charset=UTF-8'
-//        //若没有手动指定, 这里就追加设置为常用application/json
-//        if (headers == null || headers.get(CONTENT_TYPE) == null) {
-//            request.addHeader(CONTENT_TYPE, "application/json; charset=UTF-8");
-//        }
-//
-//        if (StringUtils.isNotBlank(body)) {
-//            request.setEntity(new StringEntity(body, "utf-8"));
-//        }
-//
-//        return httpClient.execute(request);
-//    }
-//
-//    /**
-//     * Put stream
-//     *
-//     * @param host
-//     * @param path
-//     * @param method
-//     * @param headers
-//     * @param querys
-//     * @param body
-//     * @return
-//     * @throws Exception
-//     */
-//    public HttpResponse doPut(String host, String path, String method,
-//                              Map<String, String> headers,
-//                              Map<String, String> querys,
-//                              byte[] body)
-//            throws Exception {
-//        HttpClient httpClient = wrapClient(host);
-//
-//        HttpPut request = new HttpPut(buildUrl(host, path, querys));
-//        for (Map.Entry<String, String> e : headers.entrySet()) {
-//            request.addHeader(e.getKey(), e.getValue());
-//        }
-//
-//        if (body != null) {
-//            request.setEntity(new ByteArrayEntity(body));
-//        }
-//
-//        return httpClient.execute(request);
-//    }
-//
-//    /**
-//     * Delete
-//     *
-//     * @param host
-//     * @param path
-//     * @param method
-//     * @param headers
-//     * @param querys
-//     * @return
-//     * @throws Exception
-//     */
-//    public HttpResponse doDelete(String host, String path, String method,
-//                                 Map<String, String> headers,
-//                                 Map<String, String> querys)
-//            throws Exception {
-//        HttpClient httpClient = wrapClient(host);
-//
-//        HttpDelete request = new HttpDelete(buildUrl(host, path, querys));
-//        for (Map.Entry<String, String> e : headers.entrySet()) {
-//            request.addHeader(e.getKey(), e.getValue());
-//        }
-//
-//        return httpClient.execute(request);
-//    }
 
-//
-//    public static void main(String[] args) {
-//        String url = "127.0.0.1:8080";
-//        try {
-//            JSONObject jsonObjectSend = new JSONObject();
-//            JSONObject bodyJsonObject = new JSONObject();
-//            JSONArray jsonArray = new JSONArray();
-//            HttpClient httpClient = new DefaultHttpClient();
-//            HttpPost method = new HttpPost(url);
-//            String[] devices = {"123", "234"};
-//            bodyJsonObject.put("message", "test");
-//            bodyJsonObject.put("devices", devices);
-//            jsonArray.put(0, bodyJsonObject);
-//            jsonObjectSend.put("body", jsonArray);
-//            String sendstr = jsonObjectSend.toString();
-//            method.addHeader("Content-type", "application/json; charset=utf-8");
-//            method.setEntity(new StringEntity(sendstr, Charset.forName("UTF-8")));
-//            httpClient.execute(method);
-//            return;
-//        } catch (Exception e) {
-//            System.out.println("error....");
-//            System.out.println(e.toString());
-//            System.out.println("--------------------");
-//            System.out.println(e.getMessage());
-//            System.out.println("--------------------");
-//            e.printStackTrace();
-//            return;
-//        }
-//    }
 
 
     /**
@@ -543,8 +457,8 @@ public class JfHttpClient {
     }
 
 
-    @Contract("_->!null")
-    protected JfResponse executeMethod(HttpClient httpClient, HttpRequestBase request) throws IOException {
+    @Contract("_,_,_->!null")
+    protected JfResponse executeMethod(HttpClient httpClient, HttpRequestBase request, RequestMeta requestMeta) throws IOException {
         HttpResponse resp = null;
         JfResponse jfResponse;
         try {
@@ -555,7 +469,7 @@ public class JfHttpClient {
 
         } finally {
             // 处理完响应后, 才可以关闭
-            jfResponse = handleJsonResponse(resp);
+            jfResponse = handleJsonResponse(resp, requestMeta);
 
             if (resp != null && resp instanceof CloseableHttpResponse) {
                 try {
@@ -578,11 +492,12 @@ public class JfHttpClient {
      * </p>
      *
      * @param resp
+     * @param requestMeta
      * @return
      * @throws IOException
      */
-    @Contract("_->!null")
-    protected JfResponse handleJsonResponse(HttpResponse resp) throws IOException {
+    @Contract("_, _ -> !null")
+    protected JfResponse handleJsonResponse(HttpResponse resp, RequestMeta requestMeta) throws IOException {
         if (resp == null) {
             // 返回无body
             return new JfResponse();
@@ -600,15 +515,19 @@ public class JfHttpClient {
         // 若响应体是加密的, 则执行解密操作
         // 解密流程包括: 验签 -> 解密
         if (body != null) {
+            // 验签
+            if (body.getSign() != null) {
+                log.debug("发现'sign', 进入验签: ");
+                boolean b = JfCipher.checkSign(body, config.getAppSecret());
+                if (!b) {
+                    throw new JfSecurityException("响应数据验签失败: 服务端签名设置有误, 或数据被篡改");
+                }
+            }
+
             // 加密响应
             if (body.getEncryption() != null && body.getEncryption()) {
                 try {
-                    JfCipher.checkSign(body, config.getServerPubkey(), config.getAppSecret());
-                } catch (Exception e) {
-                    throw new JfSecurityException("check sign exception", e);
-                }
-                try {
-                    JfCipher.decrypt(body, config.getClientPrvkey(), body.getZip() != null && body.getZip());
+                    JfCipher.decrypt2(body, requestMeta.getSessionKey(), body.getZip() != null && body.getZip());
                     log.debug("解密后的JfResBody: {}", body);
                 } catch (Exception e) {
                     throw new JfSecurityException("decrypt exception", e);
@@ -618,8 +537,6 @@ public class JfHttpClient {
                 if (body.getZip() != null && body.getZip()) {
                     String s = GzipUtils.ungzipb64(body.getData());
                     body.setData(s);
-                    // 设置压缩标记
-                    body.setZip(true);
                     log.debug("解压后的JfResBody: {}", body);
                 }
             }
@@ -637,6 +554,7 @@ public class JfHttpClient {
      */
     public HttpClient getHttpClient() {
         return new DefaultHttpClient();
+//        return HttpClients.createDefault();
     }
 
     protected void sslClient(HttpClient httpClient) {
@@ -677,6 +595,7 @@ public class JfHttpClient {
      *
      * @param data
      */
+    @NotNull
     protected <T> JfReqParam wrapReqParams(T data) {
         //Map<String, Object> p = new HashMap<>();
         JfReqParam reqParam = new JfReqParam();
@@ -684,9 +603,26 @@ public class JfHttpClient {
 
 
         // 补充系统参数
-        if (config.getAppKey() != null) reqParam.setAppKey(config.getAppKey());
+        if (config.getAppKey() != null){
+            reqParam.setAppKey(config.getAppKey());
+        }else{
+            throw new JfConfigException("缺少 'appKey' 参数配置");
+        }
         reqParam.setTimestamp(System.currentTimeMillis());
+
+
         return reqParam;
+    }
+
+    @NotNull
+    private String buildSignSrc(JfReqParam reqParam) {
+        if (config.getAppSecret() == null) {
+            throw new JfConfigException("缺少 'appSecret' 参数配置");
+        }
+        HashMap<String, Object> signMap = new HashMap<>();
+        signMap.put(HttpConst.APP_KEY, reqParam.getAppKey());
+        signMap.put(HttpConst.TIMESTAMP, reqParam.getTimestamp());
+        return JfCipher.buildSignSource(signMap, config.getAppSecret());
     }
 
 
@@ -703,32 +639,49 @@ public class JfHttpClient {
      *
      * @param <T>
      * @param data
+     * @param requestMeta
      * @return
      */
-    protected <T> JfReqParam prepareParams(T data) throws JfSecurityException {
+    protected <T> JfReqParam prepareParams(T data, RequestMeta requestMeta) throws JfSecurityException {
         // 补充系统级参数
         JfReqParam params = wrapReqParams(data);
 
-        if (params != null) {
-            // 加密
-            if (config.getEncryption()) {
-                try {
-                    JfCipher.encryptAndSign(params, config.getServerPubkey(), config.getClientPrvkey(), config.getAppSecret(), config.getZip());
-                    log.debug("加密后的JfReqParam: {}", params);
-                } catch (Exception e) {
-                    throw new JfSecurityException("encrypt and sign exception", e);
-                }
-            } else {
-                // 不加密, 但压缩
-                if (config.getZip()) {
-                    String s = GzipUtils.gzip2b64u(params.getData());
-                    params.setData(s);
-                    log.debug("压缩后的JfReqParam: {}", params);
+        // 加密
+        if (config.getEncryption()) {
+            try {
+                //JfCipher.encryptAndSign(params, config.getServerPubkey(), config.getClientPrvkey(), config.getAppSecret(), config.getZip());
+
+                String serverPubkey = config.getServerPubkey();
+                if (serverPubkey == null) {
+                    throw new JfConfigException("缺少服务端公钥");
                 }
 
+
+                String sessionKey = JfCipher.encrypt(params, config.getServerPubkey(), config.getZip());
+                // 暂存sessionKey
+                requestMeta.setSessionKey(sessionKey);
+
+                log.debug("加密后的JfReqParam: {}", params);
+            } catch (Exception e) {
+                throw new JfSecurityException("encrypt and sign exception", e);
+            }
+        } else {
+            // 不加密, 但压缩
+            if (config.getZip()) {
+                String s = GzipUtils.gzip2b64u(params.getData());
+                params.setData(s);
+                params.setZip(true);
+                log.debug("压缩后的JfReqParam: {}", params);
             }
 
         }
+
+        // 最后, 制作签名
+        if (config.getAppSecret() == null) {
+            throw new JfConfigException("缺少 'appSecret' 参数配置");
+        }
+
+        JfCipher.sign(params, config.getAppSecret());
 
 
         return params;
@@ -740,5 +693,24 @@ public class JfHttpClient {
         sb.append(config);
         sb.append('}');
         return sb.toString();
+    }
+
+
+    /**
+     * 用来保存每次请求中的数据, 这些数据在收到响应后需要用到.
+     * <p>
+     *     每个请求独占一个实例.
+     * </p>
+     */
+    class RequestMeta{
+        String sessionKey;
+
+        public String getSessionKey() {
+            return sessionKey;
+        }
+
+        public void setSessionKey(String sessionKey) {
+            this.sessionKey = sessionKey;
+        }
     }
 }

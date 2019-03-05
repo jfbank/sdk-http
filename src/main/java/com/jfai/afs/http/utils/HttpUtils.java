@@ -22,6 +22,7 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +53,8 @@ import java.util.Map;
  * </p>
  *
  * <pre>
+ *     v2.1
+ *       HttpClients.createDefault(), 生成默认的带有连接池的客户端
  *
  *     v2.0
  *       host+path合并url传参
@@ -474,7 +477,8 @@ public class HttpUtils {
 
     @NotNull
     protected static HttpClient getHttpClient() {
-        return new DefaultHttpClient();
+        //return new DefaultHttpClient();
+        return HttpClients.createDefault();
     }
 
     private static void sslClient(HttpClient httpClient) {
