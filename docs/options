@@ -15,10 +15,10 @@
 -docencoding
 'UTF-8'
 -doctitle
-'afs-http 1.0-SNAPSHOT API'
+'afs-http 2.1.0 API'
 -linkoffline
 'https://docs.oracle.com/javase/8/docs/api' 'D:/Work/JAVA/JiuFu/AntiFraudAPI/Code/anti_fraud_service/afs-http/target/javadoc-bundle-options'
 -use
 -version
 -windowtitle
-'afs-http 1.0-SNAPSHOT API'
+'afs-http 2.1.0 API'
