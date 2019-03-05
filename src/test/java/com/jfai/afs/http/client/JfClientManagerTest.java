@@ -3,6 +3,7 @@ package com.jfai.afs.http.client;
 import com.alibaba.fastjson.TypeReference;
 import com.jfai.afs.http.bean.JfResBody;
 import com.jfai.afs.http.bean.JfResponse;
+import com.jfai.afs.http.demo.DemoJfClientManager;
 import com.jfai.afs.http.exception.JfConfigException;
 import com.jfai.afs.http.utils.RSA;
 import org.apache.http.client.config.RequestConfig;
@@ -25,6 +26,57 @@ public class JfClientManagerTest {
     private static final String serverPubkey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyxQxnDmbP/FqGd4yf+fGmHINts1uA57H/uYibfvaJaoP2RxA0aLGSp3jZbsu4Ri5YD1msLY+sM4za9qzOs91aEsvEY8+7ABBVcJjfPhAZ71+qXQGPXGRIxY4rkrndW9Jvyw9DBg8W5CPvLVxeid2yVUdzkIP301CCCTcyCMzQcwIDAQAB";
 
 
+    /**
+     * Jf客户端多线程测试
+     */
+    @Test
+    public void fun6() throws InterruptedException {
+        // 构建玖富客户端管理者实例
+        JfClientManager m = new JfClientManager();
+        // 调用config()方法设置配置项, 全局配置, 只要通过这个管理者获取的客户端都会自动继承这里的配置项
+        m.config()
+                .setServerPubkey(serverPubkey)  // 玖富的公钥
+                // 默认的请求URL, 有了这项配置, 以后只要是相同URL的客户端, 可以只用传入相对路径
+                .setDefaultHost("http://localhost:18081")
+                // 事先申请的 appKey 和 appSecret
+                .setAppKey("AK531894660444999680")
+                .setAppSecret("b289cd954ae02d176d2b0c8f6d2f4c89");
+        final JfHttpClient c = m.getJfHttpClientEnc();
+
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("***********************************************");
+                // 准备接口级参数
+                HashMap<String, Object> data = new HashMap<>();
+                data.put("name", "李白");
+                data.put("type", "刺客");
+
+
+                JfResponse response = null;
+                try {
+                    response = c.doGet("http://localhost:18081/api/test/encryption", null, data);
+                    //System.out.println(response.getBody().toString(true));
+                    System.out.println(Thread.currentThread().getName());
+                } catch (Exception e) {
+                    System.out.println("异常咯...");
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        for (int i = 0; i < 50; i++) {
+            Thread t = new Thread(task);
+            t.start();
+            t.join();
+        }
+
+        System.out.println("done!");
+
+
+    }
+
+
     @Test
     public void fun5() {
 
@@ -38,7 +90,8 @@ public class JfClientManagerTest {
                 // 事先申请的 appKey 和 appSecret
                 .setAppKey("AK531894660444999680")
                 .setAppSecret("b289cd954ae02d176d2b0c8f6d2f4c89");
-        JfHttpClient c = m.getJfHttpClientEnc();
+        //JfHttpClient c = m.getJfHttpClientEncZip();
+        JfHttpClient c = m.getJfHttpClient();
 
         // 准备接口级参数
         HashMap<String, Object> data = new HashMap<>();
@@ -220,7 +273,7 @@ public class JfClientManagerTest {
         jfClientManager.config().setAppKey("AK007")
                 .setAppSecret("AS")
                 .setDefaultHost("http://localhost")
-                .setServerPubkey("server pubkey")
+                .setServerPubkey("server pubkey");
 //                .setClientPubkey("client pubkey")
 //                .setClientPrvkey("client privkey");
         JfHttpClient c = jfClientManager.getJfHttpClient();

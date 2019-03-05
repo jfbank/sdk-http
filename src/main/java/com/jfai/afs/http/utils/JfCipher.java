@@ -1,8 +1,6 @@
 package com.jfai.afs.http.utils;
 
 import com.jfai.afs.http.bean.HttpVo;
-import com.jfai.afs.http.bean.JfReqParam;
-import com.jfai.afs.http.bean.JfResBody;
 import com.jfai.afs.http.constant.HttpConst;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
@@ -351,11 +349,6 @@ public class JfCipher {
 
 
 
-    public static void main(String[] args) {
-        System.out.println(TypeUtil.isSimple(HttpConst.Encryption.MD5));
-        System.out.println(String.valueOf(HttpConst.Encryption.MD5));
-    }
-
 
     /**
      * <p>
@@ -499,5 +492,39 @@ public class JfCipher {
         }else{
             return false;
         }
+    }
+
+    /**
+     * 对字符串加密和压缩
+     * @param aesKey
+     */
+    public static String encryptAndZip(String data, String aesKey, boolean doZip) {
+        // 加密
+        byte[] bitData;
+
+        if (data != null) {
+            // 是否压缩
+            if (doZip) {
+                long gz0 = System.currentTimeMillis();
+                bitData = GzipUtils.gzip(data);
+                long gz1 = System.currentTimeMillis();
+                log.debug("gzip cost: {}ms, source size: {}KB, after gzip: {}KB, compression ratio: {}",
+                        gz1 - gz0, data.getBytes().length / 1024.0, bitData.length / 1024.0, data.getBytes().length / (bitData.length + 0.0));
+            } else {
+                bitData = data.getBytes(UTF8);
+            }
+
+            // 加密
+            long t2 = System.currentTimeMillis();
+            String enData = AES.encrypt(bitData, aesKey);
+            long t3 = System.currentTimeMillis();
+            log.debug("AES encrypt data({} chars), cost {}ms", data.length(), t3 - t2);
+            return enData;
+        } else {
+            log.debug("`data` is null, no need for encrypting");
+            return null;
+        }
+
+
     }
 }
